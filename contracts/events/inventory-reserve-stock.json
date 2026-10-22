@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/inventory-reserve-stock.json",
+  "title": "inventory.reserve-stock (command)",
+  "description": "order-service gửi tới inventory-service. Command dùng cùng envelope với event; trường eventType mang commandType (file local chưa định nghĩa envelope riêng cho command).",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "inventory.reserve-stock"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "items"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "variantId",
+        "sku",
+        "quantity"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "variantId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "sku": {
+          "$ref": "common.schema.json#/$defs/Sku"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "a1f2e3d4-c5b6-4a7b-8c9d-0e1f2a3b4c5d",
+      "eventType": "inventory.reserve-stock",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:15:30.200Z",
+      "producer": "order-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "items": [
+          {
+            "variantId": "52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5",
+            "sku": "MF-TEE-BLACK-M",
+            "quantity": 2
+          }
+        ]
+      }
+    }
+  ]
+}

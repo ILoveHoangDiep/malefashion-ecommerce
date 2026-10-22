@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/inventory-stock-commit-failed.json",
+  "title": "inventory.stock-commit-failed",
+  "description": "inventory-service phát khi không commit được reservation (hiện chỉ vì reservation hết TTL). order-service dùng event này để quyết định refund.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "inventory.stock-commit-failed"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "reservationId",
+        "reason",
+        "failedAt"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "reservationId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "reason": {
+          "const": "RESERVATION_EXPIRED"
+        },
+        "failedAt": {
+          "$ref": "common.schema.json#/$defs/Timestamp"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b9c",
+      "eventType": "inventory.stock-commit-failed",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:30:31.000Z",
+      "producer": "inventory-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "reservationId": "7a8b9c0d-1e2f-4a3b-9c4d-5e6f7a8b9c0d",
+        "reason": "RESERVATION_EXPIRED",
+        "failedAt": "2026-10-22T03:30:31.000Z"
+      }
+    }
+  ]
+}

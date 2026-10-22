@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: malefashion Inventory public read API
+  version: 1.0.0
+  description: |
+    Chỉ đọc tồn kho cho storefront, đi qua gateway. Mọi thao tác giữ chỗ/commit/release
+    là internal qua RabbitMQ. Không trả reservedQuantity, version hay dữ liệu kho nội bộ.
+servers:
+  - url: http://localhost:8080
+    description: api-gateway
+tags:
+  - name: Inventory
+paths:
+  /api/v1/inventory/variants/{variantId}:
+    get:
+      tags:
+        - Inventory
+      summary: Tồn kho khả dụng của một variant
+      operationId: getVariantStock
+      parameters:
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: './common.yaml#/components/parameters/TraceIdHeader'
+      responses:
+        '200':
+          description: Tồn kho khả dụng.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockItem'
+              example:
+                variantId: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                sku: MF-TEE-BLACK-M
+                availableQuantity: 28
+                inStock: true
+                updatedAt: '2026-10-22T03:14:30.000Z'
+        '404':
+          description: Variant chưa có bản ghi tồn kho.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/variant-not-found
+                title: Variant not found
+                status: 404
+                detail: Không có tồn kho cho variant này.
+                instance: /api/v1/inventory/variants/52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                code: VARIANT_NOT_FOUND
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:14:31.000Z'
+                errors: []
+  /api/v1/inventory/variants:
+    get:
+      tags:
+        - Inventory
+      summary: Tồn kho khả dụng của nhiều variant
+      operationId: getVariantsStock
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Danh sách UUID phân tách bằng dấu phẩy, tối đa 50 ID.
+          schema:
+            type: string
+            example: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5,11111111-2222-4333-8444-555555555555
+        - $ref: './common.yaml#/components/parameters/TraceIdHeader'
+      responses:
+        '200':
+          description: Tồn kho của các variant tìm thấy và danh sách ID thiếu.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockBatchResponse'
+              example:
+                items:
+                  - variantId: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                    sku: MF-TEE-BLACK-M
+                    availableQuantity: 28
+                    inStock: true
+                missingIds: []
+        '400':
+          description: Nhiều hơn 50 ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/too-many-ids
+                title: Too many ids
+                status: 400
+                detail: Tối đa 50 ID mỗi lần.
+                instance: /api/v1/inventory/variants
+                code: TOO_MANY_IDS
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:14:31.000Z'
+                errors: []
+components:
+  parameters:
+    TraceIdHeader:
+      $ref: './common.yaml#/components/parameters/TraceIdHeader'
+  schemas:
+    StockItem:
+      type: object
+      required:
+        - variantId
+        - sku
+        - availableQuantity
+        - inStock
+        - updatedAt
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        sku:
+          type: string
+          pattern: '^MF-[A-Z0-9]+-[A-Z0-9_]+-(S|M|L)$'
+        availableQuantity:
+          type: integer
+          minimum: 0
+        inStock:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+    StockSummary:
+      type: object
+      required:
+        - variantId
+        - sku
+        - availableQuantity
+        - inStock
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        sku:
+          type: string
+          pattern: '^MF-[A-Z0-9]+-[A-Z0-9_]+-(S|M|L)$'
+        availableQuantity:
+          type: integer
+          minimum: 0
+        inStock:
+          type: boolean
+    StockBatchResponse:
+      type: object
+      required:
+        - items
+        - missingIds
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockSummary'
+        missingIds:
+          type: array
+          items:
+            type: string
+            format: uuid

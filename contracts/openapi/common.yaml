@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: malefashion common OpenAPI components
+  version: 1.0.0
+  description: |
+    Components dùng chung cho các file OpenAPI trong thư mục này.
+    File này không mô tả endpoint; các spec khác tham chiếu qua $ref tương đối.
+paths: {}
+components:
+  schemas:
+    Money:
+      type: object
+      description: Tiền dạng string decimal, tối đa 2 chữ số thập phân; không dùng number.
+      required:
+        - amount
+        - currency
+      additionalProperties: false
+      properties:
+        amount:
+          type: string
+          pattern: '^(0|[1-9][0-9]*)\.[0-9]{2}$'
+          example: '299000.00'
+        currency:
+          type: string
+          enum:
+            - VND
+    ProblemDetail:
+      type: object
+      description: RFC 9457 application/problem+json.
+      required:
+        - type
+        - title
+        - status
+        - code
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://malefashion.local/errors/cart-empty
+        title:
+          type: string
+          example: Cart is empty
+        status:
+          type: integer
+          example: 409
+        detail:
+          type: string
+        instance:
+          type: string
+          example: /api/v1/orders/checkout
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]*$'
+          example: CART_EMPTY
+        traceId:
+          type: string
+          pattern: '^[0-9a-f]{32}$'
+          example: 4bf92f3577b34da6a3ce929d0e0e4736
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-22T03:15:31.456Z'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemDetailError'
+    ProblemDetailError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          example: items[0].quantity
+        message:
+          type: string
+          example: must be greater than 0
+    PageResponse:
+      type: object
+      description: Trang kết quả; từng API thay `content.items` bằng schema cụ thể.
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+      properties:
+        content:
+          type: array
+          items: {}
+        page:
+          type: integer
+          minimum: 0
+          example: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        totalElements:
+          type: integer
+          minimum: 0
+          example: 0
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 0
+  parameters:
+    UserIdHeader:
+      name: X-User-Id
+      in: header
+      required: true
+      description: UUID do gateway inject sau khi xác thực JWT claim `sub`.
+      schema:
+        type: string
+        format: uuid
+    UserRolesHeader:
+      name: X-User-Roles
+      in: header
+      required: true
+      description: Comma-separated, uppercase, không prefix ROLE_.
+      schema:
+        type: string
+        example: CUSTOMER
+    UserEmailHeader:
+      name: X-User-Email
+      in: header
+      required: true
+      description: Gateway inject từ JWT claim `email`; bắt buộc ở checkout.
+      schema:
+        type: string
+        format: email
+    TraceIdHeader:
+      name: X-Trace-Id
+      in: header
+      required: true
+      description: W3C trace-id 32 hex lowercase, do gateway sinh.
+      schema:
+        type: string
+        pattern: '^[0-9a-f]{32}$'
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID; cùng key + cùng body trả lại đơn cũ, body khác trả 409 IDEMPOTENCY_KEY_REUSED.
+      schema:
+        type: string
+        format: uuid
+    InternalApiKeyHeader:
+      name: X-Internal-Api-Key
+      in: header
+      required: true
+      description: Shared secret service-to-service.
+      schema:
+        type: string
+    CallerServiceHeader:
+      name: X-Caller-Service
+      in: header
+      required: true
+      schema:
+        type: string
+        example: order-service

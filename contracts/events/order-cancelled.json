@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/order-cancelled.json",
+  "title": "order.cancelled",
+  "description": "order-service phát khi saga kết thúc ở trạng thái hủy. Notification gửi email lý do hủy; cart-coupon-service không xóa giỏ.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "order.cancelled"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "orderNumber",
+        "userId",
+        "userEmail",
+        "customerName",
+        "reason",
+        "cancelledAt"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "orderNumber": {
+          "$ref": "common.schema.json#/$defs/OrderNumber"
+        },
+        "userId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "userEmail": {
+          "type": "string",
+          "format": "email"
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "OUT_OF_STOCK",
+            "PAYMENT_FAILED",
+            "SAGA_TIMEOUT",
+            "STOCK_COMMIT_FAILED"
+          ]
+        },
+        "cancelledAt": {
+          "$ref": "common.schema.json#/$defs/Timestamp"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "eventType": "order.cancelled",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:17:01.000Z",
+      "producer": "order-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "orderNumber": "MF-20261022-7K3Q9A",
+        "userId": "9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "userEmail": "an@example.com",
+        "customerName": "Nguyen Van An",
+        "reason": "PAYMENT_FAILED",
+        "cancelledAt": "2026-10-22T03:17:01.000Z"
+      }
+    }
+  ]
+}

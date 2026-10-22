@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/inventory-commit-stock.json",
+  "title": "inventory.commit-stock (command)",
+  "description": "order-service gửi tới inventory-service sau khi payment thành công.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "inventory.commit-stock"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "reservationId"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "reservationId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "b2a3f4e5-d6c7-4b8c-9d0e-1f2a3b4c5d6e",
+      "eventType": "inventory.commit-stock",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:15:46.000Z",
+      "producer": "order-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "reservationId": "7a8b9c0d-1e2f-4a3b-9c4d-5e6f7a8b9c0d"
+      }
+    }
+  ]
+}

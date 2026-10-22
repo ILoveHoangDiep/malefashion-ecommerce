@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/payment-failed.json",
+  "title": "payment.failed",
+  "description": "payment-service phát khi thanh toán mock thất bại. Mapping: mockScenario=FAILURE -> PAYMENT_DECLINED; TIMEOUT -> PAYMENT_TIMEOUT.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "payment.failed"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "paymentId",
+        "amount",
+        "failureCode",
+        "failureMessage",
+        "failedAt"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "paymentId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/Money"
+        },
+        "failureCode": {
+          "type": "string",
+          "enum": [
+            "PAYMENT_DECLINED",
+            "PAYMENT_TIMEOUT"
+          ]
+        },
+        "failureMessage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "failedAt": {
+          "$ref": "common.schema.json#/$defs/Timestamp"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f",
+      "eventType": "payment.failed",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:15:45.789Z",
+      "producer": "payment-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "paymentId": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        "amount": {
+          "amount": "578000.00",
+          "currency": "VND"
+        },
+        "failureCode": "PAYMENT_DECLINED",
+        "failureMessage": "Mock payment declined",
+        "failedAt": "2026-10-22T03:15:45.789Z"
+      }
+    }
+  ]
+}
