@@ -1,0 +1,5 @@
+# Tự động chuẩn hóa dòng kết thúc cho file văn bản
+* text=auto
+
+# Ép buộc các file shell script luôn giữ định dạng LF
+*.sh text eol=lf
