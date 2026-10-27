@@ -1,0 +1,8 @@
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.csproj.AssemblyReference.cache
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.GeneratedMSBuildEditorConfig.editorconfig
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.AssemblyInfoInputs.cache
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.AssemblyInfo.cs
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.csproj.CoreCompileInputs.cache
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.MvcApplicationPartsAssemblyInfo.cache
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.sourcelink.json
+/home/rpthoangck/malefashion-ecommerce/src/services/identity-service/obj/Debug/net8.0/identity-service.MvcApplicationPartsAssemblyInfo.cs
