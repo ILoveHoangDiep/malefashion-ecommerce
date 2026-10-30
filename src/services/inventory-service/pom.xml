@@ -20,6 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <networknt-json-schema-validator.version>3.0.8</networknt-json-schema-validator.version>
+        <swagger-request-validator.version>2.46.1</swagger-request-validator.version>
     </properties>
 
     <dependencies>
@@ -91,6 +92,13 @@
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
             <version>${networknt-json-schema-validator.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Servlet-API agnostic core: validates MockMvc responses against the OpenAPI contract. -->
+        <dependency>
+            <groupId>com.atlassian.oai</groupId>
+            <artifactId>swagger-request-validator-core</artifactId>
+            <version>${swagger-request-validator.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -72,13 +72,49 @@ AMQP properties của event: `messageId = eventId`, `type = eventType`, `correla
 
 ### 2.3. REST
 
+Service chỉ **đọc** tồn kho qua REST cho storefront; giữ/chốt/nhả hàng vẫn đi qua RabbitMQ.
+
 | Endpoint | Trạng thái | Ghi chú |
 |---|---|---|
-| `GET /actuator/health` | **Đã có** | Chỉ mở health (liveness/readiness), không mở endpoint khác |
-| `GET /api/v1/inventory/variants/{variantId}` | **Giai đoạn 3** (chưa có) | Trả `availableQuantity`, `inStock`; 404 `VARIANT_NOT_FOUND` |
-| `GET /api/v1/inventory/variants?ids=a,b` | **Giai đoạn 3** (chưa có) | Tối đa 50 id, trả `missingIds`; 400 `TOO_MANY_IDS` / `VALIDATION_ERROR` |
+| `GET /api/v1/inventory/variants/{variantId}` | **Đã có** | 200: `variantId`, `sku`, `availableQuantity`, `inStock`, `updatedAt`. 404 `VARIANT_NOT_FOUND`; 400 `VALIDATION_ERROR` khi `variantId` không phải UUID |
+| `GET /api/v1/inventory/variants?ids=a,b` | **Đã có** | Tối đa 50 id. 200: `items` + `missingIds`; 400 `TOO_MANY_IDS` / `VALIDATION_ERROR` |
+| `GET /actuator/health` | **Đã có** | Chỉ mở health (kèm `liveness`/`readiness`), không mở endpoint actuator khác |
 
-Lỗi REST sẽ dùng `application/problem+json` theo contract OpenAPI của nhóm.
+Quy ước:
+
+- `reservedQuantity` và `version` **không** trả ra ngoài.
+- `inStock = availableQuantity > 0`.
+- `ids`: phân tách bằng dấu phẩy, trim khoảng trắng, UUID không phân biệt hoa/thường, loại trùng giữ lần xuất
+  hiện đầu tiên; `items` và `missingIds` giữ đúng thứ tự caller gửi. Giới hạn 50 đếm **trước** khi loại trùng.
+  Thiếu `ids`, chuỗi rỗng, phần tử rỗng hoặc UUID sai → 400 `VALIDATION_ERROR`.
+- Lỗi trả `application/problem+json` (RFC 9457) với `type`, `title`, `status`, `detail`, `instance`, `code`,
+  `traceId`, `timestamp`, `errors[]`; không lộ stack trace.
+- Header `X-Trace-Id` được đọc và đưa vào MDC. Thiếu hoặc sai định dạng thì service **sinh** 32 ký tự hex
+  lowercase (không trả 400) và trả lại ở header `X-Trace-Id` cùng `traceId` trong problem detail.
+- Query chỉ đọc (`@Transactional(readOnly = true)`, không `FOR UPDATE`); service không verify JWT, tin gateway.
+
+Ví dụ PowerShell (service đang chạy ở cổng 8085):
+
+```powershell
+$trace = "4bf92f3577b34da6a3ce929d0e0e4736"
+
+# Một variant
+Invoke-RestMethod `
+  -Uri "http://localhost:8085/api/v1/inventory/variants/52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5" `
+  -Headers @{ "X-Trace-Id" = $trace }
+
+# Nhiều variant (id không có trong kho nằm ở missingIds)
+Invoke-RestMethod `
+  -Uri "http://localhost:8085/api/v1/inventory/variants?ids=52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5,514a23b0-f6c0-52a2-95ca-2f5fce134d37" `
+  -Headers @{ "X-Trace-Id" = $trace }
+
+# Đọc problem detail của lỗi 404
+try {
+  Invoke-RestMethod -Uri "http://localhost:8085/api/v1/inventory/variants/00000000-0000-4000-8000-000000000000"
+} catch {
+  $_.ErrorDetails.Message | ConvertFrom-Json | Format-List
+}
+```
 
 ## 3. Chạy local bằng PowerShell
 
@@ -148,10 +184,27 @@ Service dùng các biến môi trường sau (đều có default cho máy local)
 | `INVENTORY_EXPIRY_SCAN_INTERVAL_MS` | `60000` | Chu kỳ job hết hạn |
 | `INVENTORY_OUTBOX_PUBLISH_INTERVAL_MS` | `500` | Chu kỳ outbox publisher |
 | `INVENTORY_MESSAGE_MAX_ATTEMPTS` | `3` | Tổng số lần xử lý message trước khi vào DLQ |
+| `INVENTORY_SEED_ENABLED` | `false` | Bật seed tồn kho khi khởi động (profile `local` bật sẵn) |
+| `INVENTORY_SEED_PATH` | `../../../contracts/seed/variants.json` | File seed, tính từ working directory hoặc một thư mục cha |
 
 Không commit file chứa mật khẩu thật; khi chạy thật hãy đặt biến môi trường hoặc dùng secret manager.
 
-### 3.4. Build Docker (tuỳ chọn)
+### 3.4. Seed dữ liệu tồn kho
+
+`VariantSeedLoader` nạp `contracts/seed/variants.json` (60 variant, 60 SKU) vào `stock_items` lúc khởi động
+khi `inventory.seed.enabled = true`. Profile `local` đã bật sẵn, nên `.\mvnw.cmd spring-boot:run` với
+`SPRING_PROFILES_ACTIVE=local` là đủ dữ liệu để gọi REST.
+
+- Chỉ chèn variant **chưa có** dòng trong `stock_items`, bằng
+  `INSERT ... ON CONFLICT (variant_id) DO NOTHING`, với `available_quantity = initialStock`,
+  `reserved_quantity = 0`.
+- Chạy lại bao nhiêu lần cũng không đổi số lượng đã bị đơn hàng thay đổi: seed **không** reset tồn kho.
+- Nếu `sku` trong file đã thuộc về một `variantId` khác, file thiếu, hoặc JSON hỏng → service log lỗi rõ ràng
+  và **dừng khởi động**. Toàn bộ lần seed nằm trong một transaction nên không có dữ liệu chèn dở.
+- Đổi file seed bằng `INVENTORY_SEED_PATH`; đường dẫn tương đối được tìm từ working directory rồi lên các
+  thư mục cha, nên chạy từ thư mục service hay từ thư mục gốc repo đều được.
+
+### 3.5. Build Docker (tuỳ chọn)
 
 ```powershell
 cd D:\malefashion-ecommerce\src\services\inventory-service
@@ -174,6 +227,10 @@ cd D:\malefashion-ecommerce\src\services\inventory-service
 # Chỉ lớp test đồng thời
 .\mvnw.cmd -Dtest=ReserveStockConcurrencyTest test
 
+# REST và seed
+.\mvnw.cmd -Dtest=InventoryRestApiIntegrationTest test
+.\mvnw.cmd -Dtest=VariantSeedLoaderIntegrationTest test
+
 # Một lớp test bất kỳ
 .\mvnw.cmd -Dtest=InventoryCommandFlowIntegrationTest test
 ```
@@ -181,6 +238,11 @@ cd D:\malefashion-ecommerce\src\services\inventory-service
 - Mỗi lớp test tích hợp tự dựng PostgreSQL/RabbitMQ riêng, nạp `deploy/rabbitmq/definitions.json` qua
   Management API và dọn dữ liệu trước mỗi test.
 - Mọi payload trong `outbox_events` được validate bằng JSON Schema đọc trực tiếp từ `contracts/events`.
+- Response REST được validate với `contracts/openapi/inventory-api.yaml` bằng
+  `swagger-request-validator-core` (test scope).
+
+Lưu ý: seed chỉ chạy khi được gọi rõ ràng trong test (`VariantSeedLoader.seed(...)`); mỗi test bắt đầu từ
+bảng rỗng nên test Giai đoạn 2 vẫn giữ nguyên số liệu.
 - Lần chạy đầu sẽ kéo Docker image và Maven dependency, chậm hơn các lần sau.
 
 ## 5. Thiết kế
@@ -279,12 +341,12 @@ Nếu một lần reserve gặp xung đột khóa, service thử lại tối đa
 | 6 | `CONCURRENT_MODIFICATION`: `failedItems` gồm tất cả item của command, `availableQuantity` đọc tại thời điểm thất bại. |
 | 7 | `VARIANT_NOT_FOUND`: `sku` lấy từ command, `availableQuantity = 0`. |
 | 8 | Reserve thành công dùng `sku` trong `stock_items`; nếu lệch command thì log WARN. |
-| 9 | REST batch: `ids` thiếu/rỗng → 400 `VALIDATION_ERROR`; trim khoảng trắng; UUID không phân biệt hoa/thường; giữ thứ tự xuất hiện đầu tiên, loại trùng; `missingIds` giữ thứ tự xuất hiện. *(Giai đoạn 3)* |
-| 10 | Lỗi validation dùng `type = https://malefashion.local/errors/validation-error`, `code = VALIDATION_ERROR`. *(Giai đoạn 3)* |
+| 9 | REST batch: `ids` thiếu/rỗng → 400 `VALIDATION_ERROR`; trim khoảng trắng; UUID không phân biệt hoa/thường; giữ thứ tự xuất hiện đầu tiên, loại trùng; `missingIds` giữ thứ tự xuất hiện. |
+| 10 | Lỗi validation dùng `type = https://malefashion.local/errors/validation-error`, `code = VALIDATION_ERROR`. |
 | 11 | Thiếu `X-Trace-Id` → sinh 32 ký tự hex lowercase, không trả 400. |
 | 12 | `Instant` luôn serialize theo `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'` UTC. |
 | 13 | Phát lại `stock-reserved`: `eventId` mới, giữ `expiresAt` cũ, không gia hạn TTL. |
-| 14 | Đường dẫn seed resolve theo working directory; override bằng `inventory.seed.path`. *(Giai đoạn 3)* |
+| 14 | Đường dẫn seed resolve theo working directory; override bằng `inventory.seed.path`. |
 | 15 | Job TTL chỉ phát `stock-released` reason `RESERVATION_EXPIRED`, không phát `stock-commit-failed`. |
 
 ### 7.2. Quyết định bổ sung trong Giai đoạn 2
@@ -298,7 +360,23 @@ Nếu một lần reserve gặp xung đột khóa, service thử lại tối đa
    `@Transactional`; mỗi lần thử do `TransactionTemplate` mở transaction mới; container listener không bật
    `channelTransacted`.
 
-### 7.3. Giả định khác
+### 7.3. Quyết định bổ sung trong Giai đoạn 3
+
+1. **REST chỉ đọc:** `InventoryQueryService` dùng transaction `readOnly`, `findById`/`findAllById`, không
+   `FOR UPDATE`; không đổi đường ghi nào của Giai đoạn 2.
+2. **Giới hạn 50 id đếm trước khi loại trùng:** caller gửi 51 phần tử (kể cả trùng nhau) nhận 400
+   `TOO_MANY_IDS`.
+3. **Một `@RestControllerAdvice` duy nhất**, giới hạn trong package `api`, nên không đổi error shape của
+   actuator và không nuốt 404 của đường dẫn không map.
+4. **`variantId` sai định dạng là 400 `VALIDATION_ERROR`**, không phải 404: contract chỉ khai báo 404 cho
+   variant không tồn tại.
+5. **Seed idempotent:** `ON CONFLICT (variant_id) DO NOTHING` cho từng dòng; kiểm tra `sku` đã thuộc
+   variant khác trước khi chèn và dừng khởi động nếu vi phạm; toàn bộ lần seed chạy trong một transaction.
+6. **Kiểm contract bằng `swagger-request-validator-core`** trên response MockMvc, đọc trực tiếp
+   `contracts/openapi/inventory-api.yaml`. Endpoint một variant không khai báo 400 nên test cho nhánh đó tự
+   assert shape của problem detail; các nhánh 200/404/400 còn lại đều qua validator.
+
+### 7.4. Giả định khác
 
 - Nhiều dòng cùng `variantId` trong một command reserve được **cộng dồn** thành một dòng.
 - Lỗi hỗn hợp (vừa thiếu variant vừa thiếu hàng): ưu tiên phát `VARIANT_NOT_FOUND` và chỉ liệt kê item lỗi.
@@ -320,5 +398,6 @@ Nếu một lần reserve gặp xung đột khóa, service thử lại tối đa
 - Job hết hạn dừng lượt chạy khi reservation kế tiếp đang bị instance khác khóa; reservation đó có thể
   chậm tối đa một chu kỳ (60 giây). Mỗi lượt xử lý tối đa 100 reservation.
 - DLQ chưa có công cụ replay tự động; cần xem và xử lý thủ công qua Management UI.
-- REST và seed loader chưa có (Giai đoạn 3).
+- REST không phân trang và không cache; mỗi request đọc trực tiếp PostgreSQL.
+- Seed chỉ chạy lúc khởi động, không có endpoint/CLI để nạp lại khi service đang chạy.
 - Service không verify JWT; tin thông tin danh tính do API gateway truyền vào theo quy ước của nhóm.

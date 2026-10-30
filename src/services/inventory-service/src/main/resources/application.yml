@@ -62,6 +62,11 @@ inventory:
       initial-interval-ms: ${INVENTORY_MESSAGE_RETRY_INITIAL_MS:500}
       multiplier: ${INVENTORY_MESSAGE_RETRY_MULTIPLIER:2.0}
       max-interval-ms: ${INVENTORY_MESSAGE_RETRY_MAX_MS:5000}
+  seed:
+    enabled: ${INVENTORY_SEED_ENABLED:false}
+    # Relative to the working directory (or one of its ancestors); the default points at the
+    # repository's contract file when the service runs from its own directory.
+    path: ${INVENTORY_SEED_PATH:../../../contracts/seed/variants.json}
 
 management:
   endpoints:
