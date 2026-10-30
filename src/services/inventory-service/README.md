@@ -131,6 +131,24 @@ docker compose -f deploy\docker-compose\docker-compose.infra.yml ps
 Chờ `malefashion-postgres` và `malefashion-rabbitmq` ở trạng thái healthy/running. Script khởi tạo
 PostgreSQL sẽ tạo sẵn database `inventory_db`.
 
+Nếu cổng 5432 trên máy đã bị một PostgreSQL khác chiếm, dùng override có sẵn trong thư mục service để
+publish PostgreSQL ra cổng 15432:
+
+```powershell
+docker compose -f deploy\docker-compose\docker-compose.infra.yml `
+               -f src\services\inventory-service\scripts\docker-compose.local-db-port.yml `
+               up -d postgres
+$env:POSTGRES_PORT = "15432"    # dùng cho cả lúc chạy service
+```
+
+Nếu log `malefashion-postgres` báo `/bin/bash^M: bad interpreter` (script `scripts/init-multiple-dbs.sh` ở
+thư mục gốc repo đang dùng CRLF), container không tạo được database. Tạo thủ công rồi khởi động lại:
+
+```powershell
+docker start malefashion-postgres
+docker exec malefashion-postgres psql -U postgres -c "CREATE DATABASE inventory_db;"
+```
+
 ### 3.2. Nạp topology RabbitMQ
 
 Topology **không** do service tạo. Nạp `deploy/rabbitmq/definitions.json` một lần sau khi RabbitMQ chạy.
@@ -204,14 +222,73 @@ khi `inventory.seed.enabled = true`. Profile `local` đã bật sẵn, nên `.\m
 - Đổi file seed bằng `INVENTORY_SEED_PATH`; đường dẫn tương đối được tìm từ working directory rồi lên các
   thư mục cha, nên chạy từ thư mục service hay từ thư mục gốc repo đều được.
 
-### 3.5. Build Docker (tuỳ chọn)
+### 3.5. Smoke test end-to-end
+
+`scripts\smoke-test.ps1` kiểm tra service đang chạy thật (không phải Testcontainers): tạo một queue tạm
+bind `malefashion.events` với routing key `inventory.*`, publish command qua RabbitMQ Management API, rồi
+đối chiếu event nhận được với REST và dữ liệu tồn kho.
+
+Điều kiện: hạ tầng đã bật, đã nạp `definitions.json`, service đang chạy, và variant test còn ít nhất 2 đơn
+vị. Script tự xoá queue tạm và dọn DLQ ở cuối, kể cả khi có bước FAIL.
 
 ```powershell
 cd D:\malefashion-ecommerce\src\services\inventory-service
-docker build -t malefashion/inventory-service .
+.\scripts\smoke-test.ps1
 ```
 
-Container chạy bằng user non-root, expose cổng 8085.
+Kịch bản:
+
+| Bước | Kiểm tra |
+|---|---|
+| (a) | `GET` tồn kho của một variant trước khi gửi lệnh |
+| (b) | reserve thành công → nhận `inventory.stock-reserved`, tồn kho giảm đúng số lượng |
+| (c) | gửi lại **cùng `eventId`** → tồn kho không đổi, không có event mới |
+| (d) | commit → nhận `inventory.stock-committed`, tồn kho không hoàn lại |
+| (e) | reserve đơn khác rồi release → nhận `inventory.stock-released`, tồn kho hoàn lại |
+| (f) | reserve vượt tồn kho → `inventory.stock-reservation-failed` reason `INSUFFICIENT_STOCK` |
+| (g) | `GET` variant không tồn tại → 404 `application/problem+json`, code `VARIANT_NOT_FOUND` |
+| (h) | publish JSON hỏng → message nằm trong `inventory-service.commands.dlq` |
+
+Script in `[PASS]`/`[FAIL]` cho từng bước và tổng kết `PASS: n  FAIL: m`; thoát mã **1** nếu có FAIL.
+
+Tham số (đều có default): `-BaseUrl http://localhost:8085`, `-ManagementUrl http://localhost:15672`,
+`-RabbitUser guest`, `-RabbitPassword guest`, `-Vhost /`, `-VariantId`, `-WaitSeconds 20`.
+
+### 3.6. Build và chạy Docker (tuỳ chọn)
+
+```powershell
+# build context là thư mục service
+docker build -t malefashion/inventory-service:dev src/services/inventory-service
+```
+
+- Build nhiều tầng: `maven:3.9-eclipse-temurin-21-alpine` chạy `./mvnw -B -DskipTests package`
+  (**test không chạy trong image** — chạy `.\mvnw.cmd clean verify` ở máy trước khi build), runtime
+  `eclipse-temurin:21-jre-alpine`. Container chạy bằng user `app` (uid 100), không phải root, expose 8085.
+- `contracts/` **không** được copy vào image; seed chỉ có khi mount file từ ngoài.
+
+Ví dụ chạy container nối vào PostgreSQL/RabbitMQ của compose trên máy host:
+
+```powershell
+docker run -d --name inventory-service -p 8085:8085 `
+  -e POSTGRES_HOST=host.docker.internal -e POSTGRES_PORT=5432 `
+  -e RABBITMQ_HOST=host.docker.internal -e RABBITMQ_PORT=5672 `
+  -e RABBITMQ_USER=<user> -e RABBITMQ_PASSWORD=<password> `
+  -e INVENTORY_SEED_ENABLED=true -e INVENTORY_SEED_PATH=/seed/variants.json `
+  -v "D:\malefashion-ecommerce\contracts\seed:/seed:ro" `
+  malefashion/inventory-service:dev
+
+docker exec inventory-service id     # uid=100(app) ...
+curl http://localhost:8085/actuator/health
+```
+
+- `host.docker.internal` để container gọi DB/broker trên máy host; nếu chạy chung compose network thì dùng
+  tên service (`postgres`, `rabbitmq`).
+- Tài khoản RabbitMQ `guest` chỉ đăng nhập được từ localhost; container kết nối qua bridge sẽ bị từ chối.
+  Tạo user riêng cho container (quyền trên vhost `/`) hoặc cấu hình `loopback_users` cho môi trường dev.
+- Seed trong container: mount `contracts\seed` như trên rồi trỏ `INVENTORY_SEED_PATH` vào file trong
+  container, hoặc đặt `INVENTORY_SEED_ENABLED=false` nếu database đã có dữ liệu. Không copy `contracts/`
+  vào image.
+- Nếu PostgreSQL publish ở cổng 15432 (xem 3.1) thì đặt `-e POSTGRES_PORT=15432`.
 
 ## 4. Chạy test bằng PowerShell
 
@@ -400,4 +477,5 @@ Nếu một lần reserve gặp xung đột khóa, service thử lại tối đa
 - DLQ chưa có công cụ replay tự động; cần xem và xử lý thủ công qua Management UI.
 - REST không phân trang và không cache; mỗi request đọc trực tiếp PostgreSQL.
 - Seed chỉ chạy lúc khởi động, không có endpoint/CLI để nạp lại khi service đang chạy.
+- `scripts/smoke-test.ps1` cần RabbitMQ Management API (15672) và tài khoản dev; chỉ dùng cho môi trường local.
 - Service không verify JWT; tin thông tin danh tính do API gateway truyền vào theo quy ước của nhóm.
