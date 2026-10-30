@@ -30,8 +30,8 @@ public class JacksonConfig {
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer instantContractCustomizer() {
         return builder -> {
-            builder.serializers(new ContractInstantSerializer());
-            builder.deserializers(new FlexibleInstantDeserializer());
+            builder.serializerByType(Instant.class, new ContractInstantSerializer());
+            builder.deserializerByType(Instant.class, new FlexibleInstantDeserializer());
         };
     }
 

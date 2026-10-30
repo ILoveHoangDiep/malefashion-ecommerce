@@ -31,6 +31,8 @@ spring:
     virtual-host: ${RABBITMQ_VHOST:/}
     publisher-confirm-type: correlated
     publisher-returns: true
+    template:
+      mandatory: true
 
   jackson:
     default-property-inclusion: non_null
@@ -38,6 +40,28 @@ spring:
       fail-on-unknown-properties: false
     serialization:
       write-dates-as-timestamps: false
+
+inventory:
+  reservation:
+    ttl: ${INVENTORY_RESERVATION_TTL:PT15M}
+    expiry-scan-interval-ms: ${INVENTORY_EXPIRY_SCAN_INTERVAL_MS:60000}
+    expiry-initial-delay-ms: ${INVENTORY_EXPIRY_INITIAL_DELAY_MS:60000}
+    max-expiries-per-run: ${INVENTORY_MAX_EXPIRIES_PER_RUN:100}
+    reserve-max-attempts: ${INVENTORY_RESERVE_MAX_ATTEMPTS:5}
+    reserve-retry-base-delay-ms: ${INVENTORY_RESERVE_RETRY_BASE_DELAY_MS:25}
+    reserve-retry-jitter-ms: ${INVENTORY_RESERVE_RETRY_JITTER_MS:25}
+  outbox:
+    batch-size: ${INVENTORY_OUTBOX_BATCH_SIZE:100}
+    publish-interval-ms: ${INVENTORY_OUTBOX_PUBLISH_INTERVAL_MS:500}
+    initial-delay-ms: ${INVENTORY_OUTBOX_INITIAL_DELAY_MS:1000}
+    confirm-timeout-ms: ${INVENTORY_OUTBOX_CONFIRM_TIMEOUT_MS:5000}
+  messaging:
+    consumer-name: ${INVENTORY_CONSUMER_NAME:inventory-service}
+    retry:
+      max-attempts: ${INVENTORY_MESSAGE_MAX_ATTEMPTS:3}
+      initial-interval-ms: ${INVENTORY_MESSAGE_RETRY_INITIAL_MS:500}
+      multiplier: ${INVENTORY_MESSAGE_RETRY_MULTIPLIER:2.0}
+      max-interval-ms: ${INVENTORY_MESSAGE_RETRY_MAX_MS:5000}
 
 management:
   endpoints:
