@@ -49,3 +49,4 @@ minio:
   access-key: minioadmin
   secret-key: minioadminpassword
   bucket-name: catalog-images
+
