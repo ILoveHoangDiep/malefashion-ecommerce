@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/inventory-stock-released.json",
+  "title": "inventory.stock-released",
+  "description": "inventory-service phát khi nhả reservation. RESERVATION_EXPIRED có thể do TTL tự phát; order-service chỉ ghi nhận, không dùng để quyết định refund.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "inventory.stock-released"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "reservationId",
+        "reason",
+        "releasedAt"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "reservationId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "PAYMENT_FAILED",
+            "SAGA_TIMEOUT",
+            "RESERVATION_EXPIRED"
+          ]
+        },
+        "releasedAt": {
+          "$ref": "common.schema.json#/$defs/Timestamp"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d",
+      "eventType": "inventory.stock-released",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:17:00.000Z",
+      "producer": "inventory-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "reservationId": "7a8b9c0d-1e2f-4a3b-9c4d-5e6f7a8b9c0d",
+        "reason": "PAYMENT_FAILED",
+        "releasedAt": "2026-10-22T03:17:00.000Z"
+      }
+    }
+  ]
+}

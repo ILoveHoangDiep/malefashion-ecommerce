@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: malefashion Cart-Coupon internal API
+  version: 1.0.0
+  description: |
+    API nội bộ cho order-service lấy snapshot giỏ + coupon. Không route từ ngoài.
+    Cart trả unitPrice/lineTotal và totalAmount chưa gồm shippingFee; order cộng 30000.00 VND.
+servers:
+  - url: http://cart-coupon-service:8083
+    description: Gọi trực tiếp trong network nội bộ (không qua gateway).
+tags:
+  - name: Internal
+paths:
+  /internal/v1/carts/{userId}:
+    get:
+      tags:
+        - Internal
+      summary: Lấy giỏ hiện tại của user kèm coupon đã áp
+      operationId: getCartForCheckout
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: './common.yaml#/components/parameters/UserIdHeader'
+        - $ref: './common.yaml#/components/parameters/TraceIdHeader'
+        - $ref: './common.yaml#/components/parameters/InternalApiKeyHeader'
+        - $ref: './common.yaml#/components/parameters/CallerServiceHeader'
+      responses:
+        '200':
+          description: Snapshot giỏ hàng; coupon có thể không có.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+              example:
+                cartId: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+                userId: 9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                currency: VND
+                items:
+                  - variantId: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                    sku: MF-TEE-BLACK-M
+                    productName: Basic Tee
+                    size: M
+                    color: BLACK
+                    imageUrl: http://localhost:9000/malefashion-products/tee-black-m.jpg
+                    quantity: 2
+                    unitPrice:
+                      amount: '299000.00'
+                      currency: VND
+                    lineTotal:
+                      amount: '598000.00'
+                      currency: VND
+                coupon:
+                  code: SUMMER10
+                  discountAmount:
+                    amount: '50000.00'
+                    currency: VND
+                subtotal:
+                  amount: '598000.00'
+                  currency: VND
+                discountAmount:
+                  amount: '50000.00'
+                  currency: VND
+                totalAmount:
+                  amount: '548000.00'
+                  currency: VND
+                updatedAt: '2026-10-22T03:14:00.000Z'
+        '404':
+          description: Không có giỏ cho user.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/cart-not-found
+                title: Cart not found
+                status: 404
+                detail: User chưa có giỏ hàng.
+                instance: /internal/v1/carts/9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                code: CART_NOT_FOUND
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+        '409':
+          description: Giỏ rỗng.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/cart-empty
+                title: Cart is empty
+                status: 409
+                detail: Giỏ hàng không có sản phẩm.
+                instance: /internal/v1/carts/9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                code: CART_EMPTY
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+        '422':
+          description: Coupon không hợp lệ hoặc không áp dụng được.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/coupon-invalid
+                title: Coupon invalid
+                status: 422
+                detail: Mã SUMMER10 đã hết hạn.
+                instance: /internal/v1/carts/9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                code: COUPON_INVALID
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+components:
+  parameters:
+    UserIdHeader:
+      $ref: './common.yaml#/components/parameters/UserIdHeader'
+    TraceIdHeader:
+      $ref: './common.yaml#/components/parameters/TraceIdHeader'
+    InternalApiKeyHeader:
+      $ref: './common.yaml#/components/parameters/InternalApiKeyHeader'
+    CallerServiceHeader:
+      $ref: './common.yaml#/components/parameters/CallerServiceHeader'
+  schemas:
+    CartResponse:
+      type: object
+      required:
+        - cartId
+        - userId
+        - currency
+        - items
+        - subtotal
+        - discountAmount
+        - totalAmount
+        - updatedAt
+      properties:
+        cartId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        currency:
+          type: string
+          enum:
+            - VND
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CartItem'
+        coupon:
+          $ref: '#/components/schemas/AppliedCoupon'
+        subtotal:
+          $ref: './common.yaml#/components/schemas/Money'
+        discountAmount:
+          $ref: './common.yaml#/components/schemas/Money'
+        totalAmount:
+          $ref: './common.yaml#/components/schemas/Money'
+          description: subtotal - discountAmount; chưa gồm shippingFee.
+        updatedAt:
+          type: string
+          format: date-time
+    CartItem:
+      type: object
+      required:
+        - variantId
+        - sku
+        - productName
+        - size
+        - color
+        - imageUrl
+        - quantity
+        - unitPrice
+        - lineTotal
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        sku:
+          type: string
+          pattern: '^MF-[A-Z0-9]+-[A-Z0-9_]+-(S|M|L)$'
+        productName:
+          type: string
+        size:
+          type: string
+          enum:
+            - S
+            - M
+            - L
+        color:
+          type: string
+          example: BLACK
+        imageUrl:
+          type: string
+          format: uri
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          $ref: './common.yaml#/components/schemas/Money'
+        lineTotal:
+          $ref: './common.yaml#/components/schemas/Money'
+    AppliedCoupon:
+      type: object
+      required:
+        - code
+        - discountAmount
+      properties:
+        code:
+          type: string
+          example: SUMMER10
+        discountAmount:
+          $ref: './common.yaml#/components/schemas/Money'

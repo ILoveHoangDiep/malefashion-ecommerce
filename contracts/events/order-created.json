@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/order-created.json",
+  "title": "order.created",
+  "description": "order-service phát khi order và outbox event được commit. customerName = shippingAddress.recipientName của request checkout.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "order.created"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "orderNumber",
+        "userId",
+        "userEmail",
+        "customerName",
+        "currency",
+        "items",
+        "subtotal",
+        "discountAmount",
+        "shippingFee",
+        "totalAmount",
+        "createdAt"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "orderNumber": {
+          "$ref": "common.schema.json#/$defs/OrderNumber"
+        },
+        "userId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "userEmail": {
+          "type": "string",
+          "format": "email"
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currency": {
+          "const": "VND"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        },
+        "subtotal": {
+          "$ref": "common.schema.json#/$defs/Money"
+        },
+        "discountAmount": {
+          "$ref": "common.schema.json#/$defs/Money"
+        },
+        "shippingFee": {
+          "$ref": "common.schema.json#/$defs/Money"
+        },
+        "totalAmount": {
+          "$ref": "common.schema.json#/$defs/Money"
+        },
+        "createdAt": {
+          "$ref": "common.schema.json#/$defs/Timestamp"
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "variantId",
+        "sku",
+        "productName",
+        "size",
+        "color",
+        "quantity",
+        "unitPrice",
+        "lineTotal"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "variantId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "sku": {
+          "$ref": "common.schema.json#/$defs/Sku"
+        },
+        "productName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "size": {
+          "enum": [
+            "S",
+            "M",
+            "L"
+          ]
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "unitPrice": {
+          "$ref": "common.schema.json#/$defs/Money"
+        },
+        "lineTotal": {
+          "$ref": "common.schema.json#/$defs/Money"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "0f6f2a7e-3c1b-4f5a-9d2e-7a8b9c0d1e2f",
+      "eventType": "order.created",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:15:30.123Z",
+      "producer": "order-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "orderNumber": "MF-20261022-7K3Q9A",
+        "userId": "9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "userEmail": "an@example.com",
+        "customerName": "Nguyen Van An",
+        "currency": "VND",
+        "items": [
+          {
+            "variantId": "52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5",
+            "sku": "MF-TEE-BLACK-M",
+            "productName": "Basic Tee",
+            "size": "M",
+            "color": "BLACK",
+            "quantity": 2,
+            "unitPrice": {
+              "amount": "299000.00",
+              "currency": "VND"
+            },
+            "lineTotal": {
+              "amount": "598000.00",
+              "currency": "VND"
+            }
+          }
+        ],
+        "subtotal": {
+          "amount": "598000.00",
+          "currency": "VND"
+        },
+        "discountAmount": {
+          "amount": "50000.00",
+          "currency": "VND"
+        },
+        "shippingFee": {
+          "amount": "30000.00",
+          "currency": "VND"
+        },
+        "totalAmount": {
+          "amount": "578000.00",
+          "currency": "VND"
+        },
+        "createdAt": "2026-10-22T03:15:30.123Z"
+      }
+    }
+  ]
+}

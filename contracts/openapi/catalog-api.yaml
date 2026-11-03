@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: malefashion Catalog internal API
+  version: 1.0.0
+  description: |
+    API nội bộ cho order-service re-validate variant khi checkout.
+    Catalog là source of truth cho variantId, SKU và giá; catalog không trả tồn kho.
+servers:
+  - url: http://catalog-service:8082
+    description: Gọi trực tiếp trong network nội bộ (không qua gateway).
+tags:
+  - name: Internal
+paths:
+  /internal/v1/variants/batch:
+    post:
+      tags:
+        - Internal
+      summary: Lấy nhiều variant theo danh sách ID
+      operationId: getVariantsBatch
+      parameters:
+        - $ref: './common.yaml#/components/parameters/TraceIdHeader'
+        - $ref: './common.yaml#/components/parameters/InternalApiKeyHeader'
+        - $ref: './common.yaml#/components/parameters/CallerServiceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VariantBatchRequest'
+            example:
+              variantIds:
+                - 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+      responses:
+        '200':
+          description: Variant tìm thấy và danh sách ID thiếu.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantBatchResponse'
+              example:
+                variants:
+                  - variantId: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                    sku: MF-TEE-BLACK-M
+                    productId: a9a46d2d-3802-5696-a45b-640da2d18386
+                    productName: Basic Tee
+                    price:
+                      amount: '299000.00'
+                      currency: VND
+                    attributes:
+                      size: M
+                      color: BLACK
+                    imageUrl: http://localhost:9000/malefashion-products/tee-black-m.jpg
+                    active: true
+                missingIds: []
+        '400':
+          description: Request không hợp lệ (ví dụ variantIds rỗng).
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/validation-error
+                title: Validation failed
+                status: 400
+                detail: variantIds không được rỗng.
+                instance: /internal/v1/variants/batch
+                code: VALIDATION_ERROR
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors:
+                  - field: variantIds
+                    message: must not be empty
+components:
+  parameters:
+    TraceIdHeader:
+      $ref: './common.yaml#/components/parameters/TraceIdHeader'
+    InternalApiKeyHeader:
+      $ref: './common.yaml#/components/parameters/InternalApiKeyHeader'
+    CallerServiceHeader:
+      $ref: './common.yaml#/components/parameters/CallerServiceHeader'
+  schemas:
+    VariantBatchRequest:
+      type: object
+      required:
+        - variantIds
+      additionalProperties: false
+      properties:
+        variantIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+    VariantBatchResponse:
+      type: object
+      required:
+        - variants
+        - missingIds
+      properties:
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variant'
+        missingIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    Variant:
+      type: object
+      required:
+        - variantId
+        - sku
+        - productId
+        - productName
+        - price
+        - attributes
+        - imageUrl
+        - active
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        sku:
+          type: string
+          pattern: '^MF-[A-Z0-9]+-[A-Z0-9_]+-(S|M|L)$'
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        price:
+          $ref: './common.yaml#/components/schemas/Money'
+        attributes:
+          type: object
+          required:
+            - size
+            - color
+          properties:
+            size:
+              type: string
+              enum:
+                - S
+                - M
+                - L
+            color:
+              type: string
+              example: BLACK
+        imageUrl:
+          type: string
+          format: uri
+        active:
+          type: boolean

@@ -1,0 +1,330 @@
+{
+  "rabbit_version": "3.13.0",
+  "users": [
+    {
+      "name": "guest",
+      "password": "guest",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "topic_permissions": [],
+  "parameters": [],
+  "global_parameters": [],
+  "policies": [],
+  "exchanges": [
+    {
+      "name": "malefashion.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "malefashion.commands",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "malefashion.dlx",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "order-service.saga.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "malefashion.dlx",
+        "x-dead-letter-routing-key": "order-service.saga.events.dlq"
+      }
+    },
+    {
+      "name": "inventory-service.commands",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "malefashion.dlx",
+        "x-dead-letter-routing-key": "inventory-service.commands.dlq"
+      }
+    },
+    {
+      "name": "payment-service.commands",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "malefashion.dlx",
+        "x-dead-letter-routing-key": "payment-service.commands.dlq"
+      }
+    },
+    {
+      "name": "notification-service.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "malefashion.dlx",
+        "x-dead-letter-routing-key": "notification-service.events.dlq"
+      }
+    },
+    {
+      "name": "cart-coupon-service.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "malefashion.dlx",
+        "x-dead-letter-routing-key": "cart-coupon-service.events.dlq"
+      }
+    },
+    {
+      "name": "order-service.saga.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "inventory-service.commands.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "payment-service.commands.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification-service.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "cart-coupon-service.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "inventory.stock-reserved",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "inventory.stock-reservation-failed",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "inventory.stock-committed",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "inventory.stock-commit-failed",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "inventory.stock-released",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "payment.succeeded",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "payment.failed",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "order-service.saga.events",
+      "destination_type": "queue",
+      "routing_key": "payment.refunded",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.commands",
+      "vhost": "/",
+      "destination": "inventory-service.commands",
+      "destination_type": "queue",
+      "routing_key": "inventory.reserve-stock",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.commands",
+      "vhost": "/",
+      "destination": "inventory-service.commands",
+      "destination_type": "queue",
+      "routing_key": "inventory.commit-stock",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.commands",
+      "vhost": "/",
+      "destination": "inventory-service.commands",
+      "destination_type": "queue",
+      "routing_key": "inventory.release-stock",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.commands",
+      "vhost": "/",
+      "destination": "payment-service.commands",
+      "destination_type": "queue",
+      "routing_key": "payment.process-payment",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.commands",
+      "vhost": "/",
+      "destination": "payment-service.commands",
+      "destination_type": "queue",
+      "routing_key": "payment.refund-payment",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "notification-service.events",
+      "destination_type": "queue",
+      "routing_key": "order.created",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "notification-service.events",
+      "destination_type": "queue",
+      "routing_key": "order.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "notification-service.events",
+      "destination_type": "queue",
+      "routing_key": "order.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "cart-coupon-service.events",
+      "destination_type": "queue",
+      "routing_key": "order.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.events",
+      "vhost": "/",
+      "destination": "cart-coupon-service.events",
+      "destination_type": "queue",
+      "routing_key": "order.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.dlx",
+      "vhost": "/",
+      "destination": "order-service.saga.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "order-service.saga.events.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.dlx",
+      "vhost": "/",
+      "destination": "inventory-service.commands.dlq",
+      "destination_type": "queue",
+      "routing_key": "inventory-service.commands.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.dlx",
+      "vhost": "/",
+      "destination": "payment-service.commands.dlq",
+      "destination_type": "queue",
+      "routing_key": "payment-service.commands.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.dlx",
+      "vhost": "/",
+      "destination": "notification-service.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "notification-service.events.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "malefashion.dlx",
+      "vhost": "/",
+      "destination": "cart-coupon-service.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "cart-coupon-service.events.dlq",
+      "arguments": {}
+    }
+  ]
+}

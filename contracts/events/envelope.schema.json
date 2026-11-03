@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/envelope.schema.json",
+  "title": "malefashion message envelope",
+  "description": "Envelope chung cho event và command (file local chưa định nghĩa envelope riêng cho command; command dùng cùng envelope, trường eventType mang commandType).",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "correlationId",
+    "traceId",
+    "payload"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "eventId": {
+      "$ref": "common.schema.json#/$defs/Uuid",
+      "description": "UUID duy nhất của message; dùng để dedup."
+    },
+    "eventType": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"
+    },
+    "eventVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "occurredAt": {
+      "$ref": "common.schema.json#/$defs/Timestamp"
+    },
+    "producer": {
+      "type": "string",
+      "enum": [
+        "order-service",
+        "inventory-service",
+        "payment-service"
+      ]
+    },
+    "correlationId": {
+      "allOf": [
+        {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        }
+      ],
+      "description": "Với saga, correlationId = orderId."
+    },
+    "traceId": {
+      "type": "string",
+      "description": "W3C trace-id, 32 hex lowercase.",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "examples": [
+    {
+      "eventId": "0f6f2a7e-3c1b-4f5a-9d2e-7a8b9c0d1e2f",
+      "eventType": "order.created",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:15:30.123Z",
+      "producer": "order-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {}
+    }
+  ]
+}

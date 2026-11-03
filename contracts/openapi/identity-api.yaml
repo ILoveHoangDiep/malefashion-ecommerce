@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: malefashion Identity API contract
+  version: 1.0.0
+  description: |
+    File này chỉ chốt JWT claims bắt buộc và JWKS public.
+    Login/register/refresh do C tự định nghĩa; contract v0.1 không mô tả các endpoint đó.
+    JWT phải có claim: sub (userId UUID), email, roles. Gateway map:
+    sub -> X-User-Id, email -> X-User-Email, roles -> X-User-Roles.
+servers:
+  - url: http://localhost:8081
+    description: identity-service (JWKS có thể public qua gateway)
+tags:
+  - name: Identity
+paths:
+  /.well-known/jwks.json:
+    get:
+      tags:
+        - Identity
+      summary: JWKS để gateway xác thực chữ ký JWT
+      operationId: getJwks
+      responses:
+        '200':
+          description: Public keys dạng JWK Set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwks'
+              example:
+                keys:
+                  - kty: RSA
+                    use: sig
+                    alg: RS256
+                    kid: malefashion-2026-01
+                    n: sXch0nQ8exampleModulusValue
+                    e: AQAB
+components:
+  schemas:
+    JwtClaims:
+      type: object
+      description: |
+        Contract claim trong access token. Không phải response body của endpoint nào.
+        sub là userId UUID; roles là mảng giá trị uppercase.
+      required:
+        - sub
+        - email
+        - roles
+      properties:
+        sub:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+              - CUSTOMER
+              - ADMIN
+              - STAFF
+      example:
+        sub: 9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        email: an@example.com
+        roles:
+          - CUSTOMER
+    Jwks:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+    Jwk:
+      type: object
+      required:
+        - kty
+        - use
+        - alg
+        - kid
+        - n
+        - e
+      properties:
+        kty:
+          type: string
+          enum:
+            - RSA
+        use:
+          type: string
+          enum:
+            - sig
+        alg:
+          type: string
+          enum:
+            - RS256
+        kid:
+          type: string
+        n:
+          type: string
+        e:
+          type: string

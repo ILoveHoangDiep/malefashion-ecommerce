@@ -1,0 +1,636 @@
+openapi: 3.0.3
+info:
+  title: malefashion Order API
+  version: 1.0.0
+  description: |
+    API công khai của order-service, đi qua gateway.
+    Checkout bất đồng bộ: response trả status=PENDING; storefront poll
+    GET /api/v1/orders/{orderId} mỗi 2 giây, UI timeout 60 giây. SignalR ngoài phạm vi v0.1.
+servers:
+  - url: http://localhost:8080
+    description: api-gateway
+tags:
+  - name: Orders
+paths:
+  /api/v1/orders/checkout:
+    post:
+      tags:
+        - Orders
+      summary: Tạo đơn hàng từ giỏ hiện tại
+      operationId: checkoutOrder
+      description: |
+        order-service tự lấy cart và giá; storefront chỉ gửi cartId, couponCode,
+        shippingAddress, paymentMethod và mockPaymentScenario (chỉ profile demo/local).
+        `customerName` của order/event lấy từ `shippingAddress.recipientName`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './common.yaml#/components/parameters/IdempotencyKeyHeader'
+        - $ref: './common.yaml#/components/parameters/UserIdHeader'
+        - $ref: './common.yaml#/components/parameters/UserRolesHeader'
+        - $ref: './common.yaml#/components/parameters/UserEmailHeader'
+        - $ref: './common.yaml#/components/parameters/TraceIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+            example:
+              cartId: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+              couponCode: SUMMER10
+              shippingAddress:
+                recipientName: Nguyen Van An
+                phone: '0901234567'
+                addressLine: 1 Dai Co Viet
+                ward: Le Dai Hanh
+                district: Hai Ba Trung
+                city: Ha Noi
+              paymentMethod: MOCK_CARD
+              mockPaymentScenario: SUCCESS
+      responses:
+        '201':
+          description: Đơn được tạo, saga đang chạy; status=PENDING.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                orderId: 5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c
+                orderNumber: MF-20261022-7K3Q9A
+                status: PENDING
+                userId: 9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                currency: VND
+                items:
+                  - variantId: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                    sku: MF-TEE-BLACK-M
+                    productName: Basic Tee
+                    size: M
+                    color: BLACK
+                    quantity: 2
+                    unitPrice:
+                      amount: '299000.00'
+                      currency: VND
+                    lineTotal:
+                      amount: '598000.00'
+                      currency: VND
+                subtotal:
+                  amount: '598000.00'
+                  currency: VND
+                discountAmount:
+                  amount: '50000.00'
+                  currency: VND
+                shippingFee:
+                  amount: '30000.00'
+                  currency: VND
+                totalAmount:
+                  amount: '578000.00'
+                  currency: VND
+                createdAt: '2026-10-22T03:15:30.123Z'
+        '200':
+          description: Replay idempotent; trả lại đơn cũ.
+          headers:
+            Idempotent-Replayed:
+              schema:
+                type: string
+                enum:
+                  - 'true'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                orderId: 5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c
+                orderNumber: MF-20261022-7K3Q9A
+                status: PENDING
+                userId: 9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                currency: VND
+                items:
+                  - variantId: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                    sku: MF-TEE-BLACK-M
+                    productName: Basic Tee
+                    size: M
+                    color: BLACK
+                    quantity: 2
+                    unitPrice:
+                      amount: '299000.00'
+                      currency: VND
+                    lineTotal:
+                      amount: '598000.00'
+                      currency: VND
+                subtotal:
+                  amount: '598000.00'
+                  currency: VND
+                discountAmount:
+                  amount: '50000.00'
+                  currency: VND
+                shippingFee:
+                  amount: '30000.00'
+                  currency: VND
+                totalAmount:
+                  amount: '578000.00'
+                  currency: VND
+                createdAt: '2026-10-22T03:15:30.123Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Không tìm thấy giỏ của user.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/cart-not-found
+                title: Cart not found
+                status: 404
+                detail: User chưa có giỏ hàng.
+                instance: /api/v1/orders/checkout
+                code: CART_NOT_FOUND
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+        '409':
+          description: Xung đột idempotency, cart thay đổi/rỗng hoặc variant không khả dụng.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              examples:
+                idempotencyKeyReused:
+                  summary: Cùng Idempotency-Key nhưng body khác
+                  value:
+                    type: https://malefashion.local/errors/idempotency-key-reused
+                    title: Idempotency key reused
+                    status: 409
+                    detail: Idempotency-Key đã dùng cho một checkout khác.
+                    instance: /api/v1/orders/checkout
+                    code: IDEMPOTENCY_KEY_REUSED
+                    traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                    timestamp: '2026-10-22T03:15:30.123Z'
+                    errors: []
+                cartEmpty:
+                  summary: Giỏ rỗng
+                  value:
+                    type: https://malefashion.local/errors/cart-empty
+                    title: Cart is empty
+                    status: 409
+                    detail: Giỏ hàng không có sản phẩm.
+                    instance: /api/v1/orders/checkout
+                    code: CART_EMPTY
+                    traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                    timestamp: '2026-10-22T03:15:30.123Z'
+                    errors: []
+                cartChanged:
+                  summary: Giỏ thay đổi giữa lúc đọc và lúc tạo đơn
+                  value:
+                    type: https://malefashion.local/errors/cart-changed
+                    title: Cart changed
+                    status: 409
+                    detail: Giỏ đã thay đổi, vui lòng tải lại giỏ trước khi checkout.
+                    instance: /api/v1/orders/checkout
+                    code: CART_CHANGED
+                    traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                    timestamp: '2026-10-22T03:15:30.123Z'
+                    errors: []
+                variantUnavailable:
+                  summary: Variant thiếu hoặc inactive ở catalog
+                  value:
+                    type: https://malefashion.local/errors/variant-unavailable
+                    title: Variant unavailable
+                    status: 409
+                    detail: Variant 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5 không còn khả dụng.
+                    instance: /api/v1/orders/checkout
+                    code: VARIANT_UNAVAILABLE
+                    traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                    timestamp: '2026-10-22T03:15:30.123Z'
+                    errors: []
+        '422':
+          description: Coupon không hợp lệ.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/coupon-invalid
+                title: Coupon invalid
+                status: 422
+                detail: Mã SUMMER10 đã hết hạn.
+                instance: /api/v1/orders/checkout
+                code: COUPON_INVALID
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/orders/{orderId}:
+    get:
+      tags:
+        - Orders
+      summary: Xem chi tiết đơn của chính người dùng
+      operationId: getOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: './common.yaml#/components/parameters/UserIdHeader'
+        - $ref: './common.yaml#/components/parameters/TraceIdHeader'
+      responses:
+        '200':
+          description: Chi tiết đơn; chỉ trả đơn có userId trùng X-User-Id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                orderId: 5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c
+                orderNumber: MF-20261022-7K3Q9A
+                status: CONFIRMED
+                userId: 9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                currency: VND
+                items:
+                  - variantId: 52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5
+                    sku: MF-TEE-BLACK-M
+                    productName: Basic Tee
+                    size: M
+                    color: BLACK
+                    quantity: 2
+                    unitPrice:
+                      amount: '299000.00'
+                      currency: VND
+                    lineTotal:
+                      amount: '598000.00'
+                      currency: VND
+                subtotal:
+                  amount: '598000.00'
+                  currency: VND
+                discountAmount:
+                  amount: '50000.00'
+                  currency: VND
+                shippingFee:
+                  amount: '30000.00'
+                  currency: VND
+                totalAmount:
+                  amount: '578000.00'
+                  currency: VND
+                createdAt: '2026-10-22T03:15:30.123Z'
+                updatedAt: '2026-10-22T03:16:01.000Z'
+                shippingAddress:
+                  recipientName: Nguyen Van An
+                  phone: '0901234567'
+                  addressLine: 1 Dai Co Viet
+                  ward: Le Dai Hanh
+                  district: Hai Ba Trung
+                  city: Ha Noi
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          description: Không tìm thấy đơn hoặc đơn thuộc người khác.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ProblemDetail'
+              example:
+                type: https://malefashion.local/errors/order-not-found
+                title: Order not found
+                status: 404
+                detail: Không tìm thấy đơn hàng.
+                instance: /api/v1/orders/5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c
+                code: ORDER_NOT_FOUND
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:16:02.000Z'
+                errors: []
+  /api/v1/orders:
+    get:
+      tags:
+        - Orders
+      summary: Lịch sử đơn của chính người dùng
+      operationId: listOrders
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './common.yaml#/components/parameters/UserIdHeader'
+        - $ref: './common.yaml#/components/parameters/TraceIdHeader'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: createdAt,desc
+            example: createdAt,desc
+      responses:
+        '200':
+          description: Trang đơn hàng của người dùng.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPageResponse'
+              example:
+                content: []
+                page: 0
+                size: 20
+                totalElements: 0
+                totalPages: 0
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT RS256 do identity-service phát; gateway xác thực.
+  parameters:
+    UserIdHeader:
+      $ref: './common.yaml#/components/parameters/UserIdHeader'
+    UserRolesHeader:
+      $ref: './common.yaml#/components/parameters/UserRolesHeader'
+    UserEmailHeader:
+      $ref: './common.yaml#/components/parameters/UserEmailHeader'
+    TraceIdHeader:
+      $ref: './common.yaml#/components/parameters/TraceIdHeader'
+    IdempotencyKeyHeader:
+      $ref: './common.yaml#/components/parameters/IdempotencyKeyHeader'
+  responses:
+    ValidationError:
+      description: Dữ liệu request không hợp lệ.
+      content:
+        application/problem+json:
+          schema:
+            $ref: './common.yaml#/components/schemas/ProblemDetail'
+          example:
+            type: https://malefashion.local/errors/validation-error
+            title: Validation failed
+            status: 400
+            detail: Request không hợp lệ.
+            instance: /api/v1/orders/checkout
+            code: VALIDATION_ERROR
+            traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+            timestamp: '2026-10-22T03:15:30.123Z'
+            errors:
+              - field: shippingAddress.phone
+                message: must not be blank
+    Unauthenticated:
+      description: Thiếu hoặc sai JWT/header danh tính.
+      content:
+        application/problem+json:
+          schema:
+            $ref: './common.yaml#/components/schemas/ProblemDetail'
+          examples:
+            unauthenticated:
+              summary: JWT thiếu hoặc không hợp lệ
+              value:
+                type: https://malefashion.local/errors/unauthenticated
+                title: Unauthenticated
+                status: 401
+                detail: Cần đăng nhập để thực hiện thao tác này.
+                instance: /api/v1/orders/checkout
+                code: UNAUTHENTICATED
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+            missingUserContext:
+              summary: Gateway không có đủ header danh tính
+              value:
+                type: https://malefashion.local/errors/missing-user-context
+                title: Missing user context
+                status: 401
+                detail: Thiếu X-User-Id.
+                instance: /api/v1/orders/checkout
+                code: MISSING_USER_CONTEXT
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+            missingUserEmail:
+              summary: Checkout thiếu email
+              value:
+                type: https://malefashion.local/errors/missing-user-email
+                title: Missing user email
+                status: 401
+                detail: Checkout cần X-User-Email.
+                instance: /api/v1/orders/checkout
+                code: MISSING_USER_EMAIL
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                timestamp: '2026-10-22T03:15:30.123Z'
+                errors: []
+    Forbidden:
+      description: Role không được phép checkout.
+      content:
+        application/problem+json:
+          schema:
+            $ref: './common.yaml#/components/schemas/ProblemDetail'
+          example:
+            type: https://malefashion.local/errors/forbidden
+            title: Forbidden
+            status: 403
+            detail: Chỉ CUSTOMER hoặc ADMIN được checkout.
+            instance: /api/v1/orders/checkout
+            code: FORBIDDEN
+            traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+            timestamp: '2026-10-22T03:15:30.123Z'
+            errors: []
+    ServiceUnavailable:
+      description: cart/catalog không phản hồi hoặc lỗi 5xx.
+      content:
+        application/problem+json:
+          schema:
+            $ref: './common.yaml#/components/schemas/ProblemDetail'
+          example:
+            type: https://malefashion.local/errors/service-unavailable
+            title: Service unavailable
+            status: 503
+            detail: Không gọi được cart-coupon-service.
+            instance: /api/v1/orders/checkout
+            code: SERVICE_UNAVAILABLE
+            traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+            timestamp: '2026-10-22T03:15:30.123Z'
+            errors: []
+  schemas:
+    CheckoutRequest:
+      type: object
+      required:
+        - cartId
+        - shippingAddress
+        - paymentMethod
+      additionalProperties: false
+      properties:
+        cartId:
+          type: string
+          format: uuid
+        couponCode:
+          type: string
+          minLength: 1
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        paymentMethod:
+          type: string
+          enum:
+            - MOCK_CARD
+        mockPaymentScenario:
+          type: string
+          enum:
+            - SUCCESS
+            - FAILURE
+            - TIMEOUT
+          description: Chỉ chấp nhận ở profile demo/local.
+    ShippingAddress:
+      type: object
+      required:
+        - recipientName
+        - phone
+        - addressLine
+        - ward
+        - district
+        - city
+      additionalProperties: false
+      properties:
+        recipientName:
+          type: string
+          minLength: 1
+          description: Cũng là customerName của order và event order.*.
+        phone:
+          type: string
+          pattern: '^[0-9]{9,11}$'
+        addressLine:
+          type: string
+          minLength: 1
+        ward:
+          type: string
+          minLength: 1
+        district:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+    OrderItem:
+      type: object
+      required:
+        - variantId
+        - sku
+        - productName
+        - size
+        - color
+        - quantity
+        - unitPrice
+        - lineTotal
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        sku:
+          type: string
+          pattern: '^MF-[A-Z0-9]+-[A-Z0-9_]+-(S|M|L)$'
+        productName:
+          type: string
+        size:
+          type: string
+          enum:
+            - S
+            - M
+            - L
+        color:
+          type: string
+          example: BLACK
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          $ref: './common.yaml#/components/schemas/Money'
+        lineTotal:
+          $ref: './common.yaml#/components/schemas/Money'
+    OrderResponse:
+      type: object
+      required:
+        - orderId
+        - orderNumber
+        - status
+        - userId
+        - currency
+        - items
+        - subtotal
+        - discountAmount
+        - shippingFee
+        - totalAmount
+        - createdAt
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+          pattern: '^MF-\d{8}-[A-Z0-9]{6}$'
+        status:
+          type: string
+          enum:
+            - PENDING
+            - CONFIRMED
+            - CANCELLED
+            - FAILED
+        cancelReason:
+          type: string
+          enum:
+            - OUT_OF_STOCK
+            - PAYMENT_FAILED
+            - SAGA_TIMEOUT
+            - STOCK_COMMIT_FAILED
+          description: Chỉ có khi status=CANCELLED/FAILED; FAILED chỉ cho lỗi không bù trừ được.
+        userId:
+          type: string
+          format: uuid
+        currency:
+          type: string
+          enum:
+            - VND
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        subtotal:
+          $ref: './common.yaml#/components/schemas/Money'
+        discountAmount:
+          $ref: './common.yaml#/components/schemas/Money'
+        shippingFee:
+          $ref: './common.yaml#/components/schemas/Money'
+        totalAmount:
+          $ref: './common.yaml#/components/schemas/Money'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+    OrderPageResponse:
+      allOf:
+        - $ref: './common.yaml#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderResponse'

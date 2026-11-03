@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malefashion.local/contracts/events/payment-refund-payment.json",
+  "title": "payment.refund-payment (command)",
+  "description": "order-service gửi tới payment-service khi payment đã thành công nhưng inventory.stock-commit-failed.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "eventType",
+        "payload"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "payment.refund-payment"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "paymentId",
+        "amount",
+        "reason"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "paymentId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/Money"
+        },
+        "reason": {
+          "const": "STOCK_COMMIT_FAILED"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "e5d6c7b8-a9f0-4e1f-8a3b-4c5d6e7f8a9b",
+      "eventType": "payment.refund-payment",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-22T03:30:31.500Z",
+      "producer": "order-service",
+      "correlationId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {
+        "orderId": "5d1c9b2a-8e4f-4a6b-b1c2-3d4e5f6a7b8c",
+        "paymentId": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        "amount": {
+          "amount": "578000.00",
+          "currency": "VND"
+        },
+        "reason": "STOCK_COMMIT_FAILED"
+      }
+    }
+  ]
+}

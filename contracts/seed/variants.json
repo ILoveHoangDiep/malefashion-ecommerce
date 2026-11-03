@@ -1,0 +1,785 @@
+{
+  "version": 1,
+  "products": [
+    {
+      "productId": "a9a46d2d-3802-5696-a45b-640da2d18386",
+      "productName": "Basic Tee",
+      "variants": [
+        {
+          "variantId": "514a23b0-f6c0-52a2-95ca-2f5fce134d37",
+          "sku": "MF-TEE-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "299000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/basic-tee-black-s.jpg",
+          "initialStock": 32
+        },
+        {
+          "variantId": "ed5b314f-a04b-551c-a903-05a9ce3ad087",
+          "sku": "MF-TEE-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "299000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/basic-tee-white-s.jpg",
+          "initialStock": 24
+        },
+        {
+          "variantId": "52e1d8ae-7c8f-5ec8-9ce7-a4c81caed6f5",
+          "sku": "MF-TEE-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "299000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/basic-tee-black-m.jpg",
+          "initialStock": 32
+        },
+        {
+          "variantId": "320dead7-35cc-5d88-b0b5-db2a7db2aa22",
+          "sku": "MF-TEE-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "299000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/basic-tee-white-m.jpg",
+          "initialStock": 43
+        },
+        {
+          "variantId": "7f419173-6ccc-5fe3-86fb-d8e68cfa47c1",
+          "sku": "MF-TEE-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "299000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/basic-tee-black-l.jpg",
+          "initialStock": 31
+        },
+        {
+          "variantId": "21296810-a8df-5d94-8b5c-3e69854282f5",
+          "sku": "MF-TEE-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "299000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/basic-tee-white-l.jpg",
+          "initialStock": 43
+        }
+      ]
+    },
+    {
+      "productId": "87bc22b7-496f-5d35-b4f2-9af40f80a463",
+      "productName": "Oxford Shirt",
+      "variants": [
+        {
+          "variantId": "34bc3980-fec8-52f2-9f38-45315b0c3645",
+          "sku": "MF-OXFORD-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "459000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/oxford-shirt-black-s.jpg",
+          "initialStock": 26
+        },
+        {
+          "variantId": "8d6a815a-6b85-519f-9c3d-1c545f81c156",
+          "sku": "MF-OXFORD-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "459000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/oxford-shirt-white-s.jpg",
+          "initialStock": 22
+        },
+        {
+          "variantId": "183aca76-b9a9-5b71-b8de-165236c67e39",
+          "sku": "MF-OXFORD-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "459000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/oxford-shirt-black-m.jpg",
+          "initialStock": 31
+        },
+        {
+          "variantId": "dfeb38be-734c-5abc-ad9d-b634dedbe755",
+          "sku": "MF-OXFORD-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "459000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/oxford-shirt-white-m.jpg",
+          "initialStock": 28
+        },
+        {
+          "variantId": "2815cf84-3835-5b11-8cfb-ab78c8ce9462",
+          "sku": "MF-OXFORD-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "459000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/oxford-shirt-black-l.jpg",
+          "initialStock": 40
+        },
+        {
+          "variantId": "8752e5a0-c7d5-5ac5-93a6-81a2ca5fc1db",
+          "sku": "MF-OXFORD-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "459000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/oxford-shirt-white-l.jpg",
+          "initialStock": 20
+        }
+      ]
+    },
+    {
+      "productId": "bb12a3b9-ddd4-5407-a961-f7d398f772ae",
+      "productName": "Polo Shirt",
+      "variants": [
+        {
+          "variantId": "84e1b26b-9657-50fe-9de2-82a3316b5900",
+          "sku": "MF-POLO-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "399000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/polo-shirt-black-s.jpg",
+          "initialStock": 27
+        },
+        {
+          "variantId": "51aaf164-f68a-5bd9-81f6-a01e862f2389",
+          "sku": "MF-POLO-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "399000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/polo-shirt-white-s.jpg",
+          "initialStock": 42
+        },
+        {
+          "variantId": "94d00162-af21-54d3-861d-cff206c3be39",
+          "sku": "MF-POLO-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "399000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/polo-shirt-black-m.jpg",
+          "initialStock": 21
+        },
+        {
+          "variantId": "1fd8ea16-54b2-55b4-ae3a-2a522008704e",
+          "sku": "MF-POLO-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "399000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/polo-shirt-white-m.jpg",
+          "initialStock": 47
+        },
+        {
+          "variantId": "b02d8c11-335e-52ab-aded-073afe889361",
+          "sku": "MF-POLO-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "399000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/polo-shirt-black-l.jpg",
+          "initialStock": 28
+        },
+        {
+          "variantId": "d3919b69-a9b9-5984-9f42-930dc703c607",
+          "sku": "MF-POLO-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "399000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/polo-shirt-white-l.jpg",
+          "initialStock": 50
+        }
+      ]
+    },
+    {
+      "productId": "e48e611d-b453-5be1-a9fa-c42b43a16e41",
+      "productName": "Hoodie",
+      "variants": [
+        {
+          "variantId": "e1fa6484-e250-570a-a889-1af12e38ebe8",
+          "sku": "MF-HOODIE-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "599000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/hoodie-black-s.jpg",
+          "initialStock": 37
+        },
+        {
+          "variantId": "de79c275-24df-5b0c-a938-e501050ff8cc",
+          "sku": "MF-HOODIE-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "599000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/hoodie-white-s.jpg",
+          "initialStock": 26
+        },
+        {
+          "variantId": "7e9eddc1-c2ae-5c99-9511-55c41d3fbbe3",
+          "sku": "MF-HOODIE-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "599000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/hoodie-black-m.jpg",
+          "initialStock": 42
+        },
+        {
+          "variantId": "352193b0-012c-50b7-8b2c-35d9b4536c8c",
+          "sku": "MF-HOODIE-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "599000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/hoodie-white-m.jpg",
+          "initialStock": 39
+        },
+        {
+          "variantId": "d231fbeb-c4f6-5018-9ce1-b85f3048d721",
+          "sku": "MF-HOODIE-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "599000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/hoodie-black-l.jpg",
+          "initialStock": 40
+        },
+        {
+          "variantId": "8d2900aa-0dd5-5b83-84cf-3e707c354b5a",
+          "sku": "MF-HOODIE-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "599000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/hoodie-white-l.jpg",
+          "initialStock": 45
+        }
+      ]
+    },
+    {
+      "productId": "9498d45e-61eb-5db6-a9a9-5d6b474f9282",
+      "productName": "Bomber Jacket",
+      "variants": [
+        {
+          "variantId": "b7278c14-a852-54bf-a7e3-dc636746b0a1",
+          "sku": "MF-JACKET-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "899000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/bomber-jacket-black-s.jpg",
+          "initialStock": 48
+        },
+        {
+          "variantId": "79c7c7eb-b876-57d3-8b80-689256f60120",
+          "sku": "MF-JACKET-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "899000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/bomber-jacket-white-s.jpg",
+          "initialStock": 36
+        },
+        {
+          "variantId": "f55c999e-6731-5448-94e9-a12a558697b9",
+          "sku": "MF-JACKET-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "899000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/bomber-jacket-black-m.jpg",
+          "initialStock": 37
+        },
+        {
+          "variantId": "d0acc1b4-c163-5f84-b156-cfe55e5ab79f",
+          "sku": "MF-JACKET-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "899000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/bomber-jacket-white-m.jpg",
+          "initialStock": 26
+        },
+        {
+          "variantId": "521ebf21-6747-5568-8f42-fc4fdf8beebf",
+          "sku": "MF-JACKET-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "899000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/bomber-jacket-black-l.jpg",
+          "initialStock": 33
+        },
+        {
+          "variantId": "5b9264ca-6de9-507f-8549-18477585b02d",
+          "sku": "MF-JACKET-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "899000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/bomber-jacket-white-l.jpg",
+          "initialStock": 45
+        }
+      ]
+    },
+    {
+      "productId": "27792c29-ad76-598f-939e-f17663a62848",
+      "productName": "Slim Jeans",
+      "variants": [
+        {
+          "variantId": "5787c055-0101-589d-a340-51c679d91134",
+          "sku": "MF-JEANS-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "699000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/slim-jeans-black-s.jpg",
+          "initialStock": 22
+        },
+        {
+          "variantId": "a7921076-a2fb-5f7d-9703-0bd6c06535bd",
+          "sku": "MF-JEANS-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "699000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/slim-jeans-white-s.jpg",
+          "initialStock": 23
+        },
+        {
+          "variantId": "7d64cbbd-aad8-56c5-8d1c-b94d9055720d",
+          "sku": "MF-JEANS-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "699000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/slim-jeans-black-m.jpg",
+          "initialStock": 46
+        },
+        {
+          "variantId": "ae422c95-e1ae-5f84-b396-507c19dc0eba",
+          "sku": "MF-JEANS-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "699000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/slim-jeans-white-m.jpg",
+          "initialStock": 29
+        },
+        {
+          "variantId": "e6a01b29-cfa5-573e-8124-3323309c6201",
+          "sku": "MF-JEANS-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "699000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/slim-jeans-black-l.jpg",
+          "initialStock": 34
+        },
+        {
+          "variantId": "2f14bf1a-7398-5792-a56b-ada56f5caa84",
+          "sku": "MF-JEANS-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "699000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/slim-jeans-white-l.jpg",
+          "initialStock": 23
+        }
+      ]
+    },
+    {
+      "productId": "82f553de-05f8-5302-81e2-c5391e3d728d",
+      "productName": "Chino Pants",
+      "variants": [
+        {
+          "variantId": "d63977d0-da78-579b-9b61-32ddfdc3b487",
+          "sku": "MF-CHINO-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "549000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/chino-pants-black-s.jpg",
+          "initialStock": 22
+        },
+        {
+          "variantId": "71965d7f-74f2-59d4-8f11-b10120704928",
+          "sku": "MF-CHINO-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "549000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/chino-pants-white-s.jpg",
+          "initialStock": 50
+        },
+        {
+          "variantId": "eae80c85-baca-5e2f-93ae-0f620f1121f6",
+          "sku": "MF-CHINO-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "549000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/chino-pants-black-m.jpg",
+          "initialStock": 33
+        },
+        {
+          "variantId": "6112fa83-e96e-55ee-a0d1-048b3a5ad39f",
+          "sku": "MF-CHINO-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "549000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/chino-pants-white-m.jpg",
+          "initialStock": 21
+        },
+        {
+          "variantId": "6d44fd32-3274-5d8e-afca-f186369a0c10",
+          "sku": "MF-CHINO-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "549000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/chino-pants-black-l.jpg",
+          "initialStock": 27
+        },
+        {
+          "variantId": "c45567f1-3a0a-5875-83a7-7d6664429dcf",
+          "sku": "MF-CHINO-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "549000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/chino-pants-white-l.jpg",
+          "initialStock": 33
+        }
+      ]
+    },
+    {
+      "productId": "58b2d7e3-1840-5dcd-af24-cfc92baba22e",
+      "productName": "Midi Dress",
+      "variants": [
+        {
+          "variantId": "b9a771e6-e780-5fb5-9c40-6c1e9a42d44c",
+          "sku": "MF-DRESS-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "749000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/midi-dress-black-s.jpg",
+          "initialStock": 41
+        },
+        {
+          "variantId": "aa31e1c7-dab9-518a-af84-35b19d7c27df",
+          "sku": "MF-DRESS-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "749000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/midi-dress-white-s.jpg",
+          "initialStock": 25
+        },
+        {
+          "variantId": "f1b9aec8-1da3-55ae-9289-f1dd3429f75d",
+          "sku": "MF-DRESS-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "749000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/midi-dress-black-m.jpg",
+          "initialStock": 32
+        },
+        {
+          "variantId": "4d0bf3f2-a407-589c-94cc-6fc032874d68",
+          "sku": "MF-DRESS-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "749000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/midi-dress-white-m.jpg",
+          "initialStock": 37
+        },
+        {
+          "variantId": "31c5a3bb-a21a-5a52-9053-83d01cfc82f3",
+          "sku": "MF-DRESS-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "749000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/midi-dress-black-l.jpg",
+          "initialStock": 27
+        },
+        {
+          "variantId": "03edf75d-e0bb-5943-9a89-aa8966d6beaf",
+          "sku": "MF-DRESS-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "749000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/midi-dress-white-l.jpg",
+          "initialStock": 32
+        }
+      ]
+    },
+    {
+      "productId": "4a9e11b9-d139-50df-915a-104554d271fc",
+      "productName": "Pleated Skirt",
+      "variants": [
+        {
+          "variantId": "7e97b636-b3b3-5ef4-aac5-19a286439e75",
+          "sku": "MF-SKIRT-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "499000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/pleated-skirt-black-s.jpg",
+          "initialStock": 30
+        },
+        {
+          "variantId": "c0281e27-7706-50a0-b054-d049bd6b6574",
+          "sku": "MF-SKIRT-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "499000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/pleated-skirt-white-s.jpg",
+          "initialStock": 23
+        },
+        {
+          "variantId": "00dbaf84-74fc-5855-b880-4d0fe9c65ef7",
+          "sku": "MF-SKIRT-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "499000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/pleated-skirt-black-m.jpg",
+          "initialStock": 20
+        },
+        {
+          "variantId": "521122d0-ab7f-5052-a574-4890b4601cce",
+          "sku": "MF-SKIRT-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "499000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/pleated-skirt-white-m.jpg",
+          "initialStock": 24
+        },
+        {
+          "variantId": "0ebef046-bedd-56ee-9e8f-a757fa26f82d",
+          "sku": "MF-SKIRT-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "499000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/pleated-skirt-black-l.jpg",
+          "initialStock": 34
+        },
+        {
+          "variantId": "6b88012b-86d7-5ab1-83d5-ef0bac631578",
+          "sku": "MF-SKIRT-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "499000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/pleated-skirt-white-l.jpg",
+          "initialStock": 22
+        }
+      ]
+    },
+    {
+      "productId": "c9921d09-99ce-55f7-842c-222f3b16a47b",
+      "productName": "Cargo Shorts",
+      "variants": [
+        {
+          "variantId": "d56090b2-553a-5079-aa1b-d3c31823c98f",
+          "sku": "MF-SHORTS-BLACK-S",
+          "size": "S",
+          "color": "BLACK",
+          "price": {
+            "amount": "449000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/cargo-shorts-black-s.jpg",
+          "initialStock": 33
+        },
+        {
+          "variantId": "c453981a-68cf-567f-8826-b5c141a09c71",
+          "sku": "MF-SHORTS-WHITE-S",
+          "size": "S",
+          "color": "WHITE",
+          "price": {
+            "amount": "449000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/cargo-shorts-white-s.jpg",
+          "initialStock": 30
+        },
+        {
+          "variantId": "0b53ff12-ec5c-559a-8ba3-92e52646e393",
+          "sku": "MF-SHORTS-BLACK-M",
+          "size": "M",
+          "color": "BLACK",
+          "price": {
+            "amount": "449000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/cargo-shorts-black-m.jpg",
+          "initialStock": 27
+        },
+        {
+          "variantId": "603496c3-9ff6-5a43-8b12-20fc6e57b1d4",
+          "sku": "MF-SHORTS-WHITE-M",
+          "size": "M",
+          "color": "WHITE",
+          "price": {
+            "amount": "449000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/cargo-shorts-white-m.jpg",
+          "initialStock": 33
+        },
+        {
+          "variantId": "d70055ce-93fd-5542-8534-d58e4f35b27d",
+          "sku": "MF-SHORTS-BLACK-L",
+          "size": "L",
+          "color": "BLACK",
+          "price": {
+            "amount": "449000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/cargo-shorts-black-l.jpg",
+          "initialStock": 24
+        },
+        {
+          "variantId": "3a07885d-2aa3-5c2a-b3db-41b325f3fa15",
+          "sku": "MF-SHORTS-WHITE-L",
+          "size": "L",
+          "color": "WHITE",
+          "price": {
+            "amount": "449000.00",
+            "currency": "VND"
+          },
+          "imageUrl": "http://localhost:9000/malefashion-products/cargo-shorts-white-l.jpg",
+          "initialStock": 47
+        }
+      ]
+    }
+  ]
+}
