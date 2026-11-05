@@ -14,6 +14,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+import java.util.List;
+
 /**
  * Khởi động PostgreSQL 16 thật bằng Testcontainers và dọn dữ liệu trước mỗi test.
  * Prompt 1 chưa nối RabbitMQ nên base này chỉ cần database.
@@ -62,5 +64,29 @@ public abstract class IntegrationTestBase {
     void resetState() {
         // refunds tham chiếu payments nên phải truncate cùng lúc.
         jdbcTemplate.execute("TRUNCATE TABLE refunds, payments, outbox_events, processed_messages");
+    }
+
+    /**
+     * Payload đúng như đã lưu trong {@code jsonb}, để test validate chính dữ liệu DB thay vì object
+     * trong bộ nhớ.
+     */
+    protected List<String> storedOutboxPayloads() {
+        return jdbcTemplate.queryForList(
+                "SELECT payload::text FROM outbox_events ORDER BY created_at, id", String.class);
+    }
+
+    protected int countOutboxEvents() {
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM outbox_events", Integer.class);
+        return count == null ? 0 : count;
+    }
+
+    protected int countPayments() {
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM payments", Integer.class);
+        return count == null ? 0 : count;
+    }
+
+    protected int countRefunds() {
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM refunds", Integer.class);
+        return count == null ? 0 : count;
     }
 }

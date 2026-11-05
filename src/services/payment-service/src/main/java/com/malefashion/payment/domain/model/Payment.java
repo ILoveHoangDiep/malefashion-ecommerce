@@ -111,6 +111,17 @@ public class Payment {
         return new Payment(id, orderId, amount, status, scenario, now);
     }
 
+    /**
+     * Đánh dấu payment đã được hoàn tiền toàn phần.
+     *
+     * <p>Chỉ gọi khi payment đang {@code SUCCEEDED} và dòng đã được khóa trong transaction hiện tại.</p>
+     */
+    public void markRefunded(Instant now) {
+        Objects.requireNonNull(now, "now must not be null");
+        this.status = PaymentStatus.REFUNDED;
+        this.updatedAt = now;
+    }
+
     public UUID getId() {
         return id;
     }
