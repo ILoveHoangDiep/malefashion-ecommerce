@@ -1,0 +1,7 @@
+logging:
+  level:
+    com.malefashion.payment: DEBUG
+
+payment:
+  mock:
+    honor-scenario: true
