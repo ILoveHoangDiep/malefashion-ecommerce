@@ -9,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Cấu hình JWT Bearer đồng bộ theo JwtSettings và Secret
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secret = jwtSettings["Secret"] ?? "MalefashionSecretKeyMustBeVeryLongAndSecure2026!";
+var issuer = jwtSettings["Issuer"] ?? "malefashion-identity";
+var audience = jwtSettings["Audience"] ?? "malefashion-clients";
 var key = Encoding.UTF8.GetBytes(secret);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -21,9 +23,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuer = true,
-            ValidIssuer = jwtSettings["Issuer"] ?? "malefashion-identity",
+            ValidIssuer = issuer,
             ValidateAudience = true,
-            ValidAudience = jwtSettings["Audience"] ?? "malefashion-client",
+            // Chấp nhận cả 2 định dạng audience số ít và số nhiều để tránh lệch config
+            ValidAudiences = new[] { "malefashion-client", "malefashion-clients", audience },
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
@@ -34,20 +37,21 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AuthenticatedUser", policy => policy.RequireAuthenticatedUser());
 });
 
-// 2. YARP và Request Transforms
+// 2. Cấu hình YARP Reverse Proxy & Transforms xử lý Header
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
     .AddTransforms(builderContext =>
     {
-        builderContext.AddRequestTransform(async transformContext =>
+        builderContext.AddRequestTransform(transformContext =>
         {
-            // Chống Header Spoofing: xóa các header do client tự đính kèm
+            // Chống Header Spoofing: xóa header do client tự đính kèm
             transformContext.ProxyRequest.Headers.Remove("X-User-Id");
             transformContext.ProxyRequest.Headers.Remove("X-User-Role");
 
             var user = transformContext.HttpContext.User;
             if (user.Identity?.IsAuthenticated == true)
             {
+                // Inject danh tính đã xác thực vào downstream request
                 var userId = user.FindFirstValue(ClaimTypes.NameIdentifier) 
                              ?? user.FindFirstValue("sub");
                 if (!string.IsNullOrEmpty(userId))
@@ -61,6 +65,8 @@ builder.Services.AddReverseProxy()
                     transformContext.ProxyRequest.Headers.Add("X-User-Role", role);
                 }
             }
+
+            return ValueTask.CompletedTask;
         });
     });
 
