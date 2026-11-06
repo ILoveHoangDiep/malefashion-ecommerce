@@ -61,7 +61,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Có lỗi xảy ra khi tự động migrate cơ sở dữ liệu.");
+        logger.LogError(ex, "Lỗi xảy ra khi tự động migrate database.");
     }
 }
 
