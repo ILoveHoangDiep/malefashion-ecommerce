@@ -18,7 +18,7 @@ builder.Services.AddDbContext<IdentityDbContext>(options =>
 
 // token service
 builder.Services.AddScoped<TokenService>();
-
+    
 // cau hinh xac thuc jwt bearer
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

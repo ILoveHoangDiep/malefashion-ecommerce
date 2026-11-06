@@ -1,0 +1,139 @@
+networks:
+  malefashion-network:
+    name: malefashion-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+
+services:
+  # ==========================================
+  # 1. HẠ TẦNG (INFRASTRUCTURE)
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: malefashion-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_MULTIPLE_DATABASES: identity_db,catalog_db,cart_db,order_db,inventory_db,payment_db,notification_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../scripts/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    networks:
+      - malefashion-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: malefashion-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - malefashion-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: malefashion-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - malefashion-network
+
+  minio:
+    image: chainguard/minio:latest
+    container_name: malefashion-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    volumes:
+      - minio_data:/data
+    networks:
+      - malefashion-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: malefashion-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - malefashion-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: malefashion-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - malefashion-network
+
+  # ==========================================
+  # 2. MICROSERVICES
+  # ==========================================
+  identity-service:
+    build:
+      context: ../../src/services/identity-service
+      dockerfile: Dockerfile
+    image: malefashion-identity-service:latest
+    container_name: malefashion-identity-service
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=malefashion-postgres;Port=5432;Database=identity_db;Username=postgres;Password=postgrespassword"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - malefashion-network
+
+  # ==========================================
+  # 3. API GATEWAY (SINGLE ENTRY POINT)
+  # ==========================================
+  api-gateway:
+    build:
+      context: ../../src/gateways/api-gateway
+      dockerfile: Dockerfile
+    image: malefashion-api-gateway:latest
+    container_name: malefashion-api-gateway
+    restart: unless-stopped
+    ports:
+      - "7000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ReverseProxy__Clusters__identity-cluster__Destinations__identity-service__Address: "http://malefashion-identity-service:8080"
+    depends_on:
+      - identity-service
+    networks:
+      - malefashion-network
