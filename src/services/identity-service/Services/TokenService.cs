@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using IdentityService.Data.Entities;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
 
 namespace IdentityService.Services;
 
@@ -14,7 +15,7 @@ public class TokenService
         _config = config;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateAccessToken(User user)
     {
         // Key & Sign
         var jwtSettings = _config.GetSection("JwtSettings");
@@ -27,7 +28,8 @@ public class TokenService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(ClaimTypes.Role, user.Role),
-            new Claim("fullName", user.FullName)
+            new Claim("fullName", user.FullName),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
         // JWT
@@ -35,10 +37,26 @@ public class TokenService
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(double.Parse(jwtSettings["ExpiryDays"] ?? "7")),
+            expires: DateTime.UtcNow.AddMinutes(15), // TTL: 15 mins
             signingCredentials: creds
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    public string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        return Convert.ToBase64String(randomBytes);
+    }
+
+    public string HashToken(string token) // hash refresh token
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToHexString(bytes).ToLower();
+    }
+
+    public string GenerateToken(User user) => GenerateAccessToken(user); // khong bi goi nham ham cu
 }

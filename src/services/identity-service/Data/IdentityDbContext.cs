@@ -12,8 +12,11 @@ public class IdentityDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<User>()
-            .HasIndex(user => user.Email) // username = email
-            .IsUnique();
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Email)
+                  .IsUnique();
+            entity.HasIndex(u => u.RefreshTokenHash);
+        });
     }
 }
