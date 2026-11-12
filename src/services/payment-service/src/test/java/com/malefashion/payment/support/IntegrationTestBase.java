@@ -8,19 +8,27 @@ import com.malefashion.payment.infrastructure.persistence.RefundRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Khởi động PostgreSQL 16 thật bằng Testcontainers và dọn dữ liệu trước mỗi test.
- * Prompt 1 chưa nối RabbitMQ nên base này chỉ cần database.
+ * Base này không có RabbitMQ nên tắt listener và outbox publisher để test cũ không chạm broker thật.
  */
 @SpringBootTest
+@ContextConfiguration(initializers = IntegrationTestBase.MessagingIsolationInitializer.class)
 // Mỗi lớp test có context riêng để trạng thái DB không rò rỉ giữa các lớp.
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class IntegrationTestBase {
@@ -40,6 +48,41 @@ public abstract class IntegrationTestBase {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
+        registry.add("payment.messaging.listener.auto-startup", () -> "false");
+        registry.add("payment.outbox.publisher.enabled", () -> "false");
+    }
+
+    /**
+     * {@code @DynamicPropertySource} của lớp cha chạy SAU lớp con và ghi đè bằng {@code Map.put},
+     * nên không thể trông vào thứ tự đăng ký để messaging test bật lại hai công tắc. Initializer
+     * chạy sau khi mọi dynamic property đã đăng ký; nếu context có đăng ký động
+     * {@code spring.rabbitmq.port} (chỉ {@link MessagingIntegrationTestBase} làm vậy) thì thêm một
+     * property source ưu tiên cao nhất bật lại listener + publisher.
+     */
+    static final class MessagingIsolationInitializer
+            implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+
+        private static final String LISTENER_AUTO_STARTUP =
+                "payment.messaging.listener.auto-startup";
+        private static final String OUTBOX_PUBLISHER_ENABLED =
+                "payment.outbox.publisher.enabled";
+
+        @Override
+        public void initialize(ConfigurableApplicationContext context) {
+            ConfigurableEnvironment environment = context.getEnvironment();
+            boolean messagingTest = environment.getPropertySources().stream()
+                    .filter(MapPropertySource.class::isInstance)
+                    .map(MapPropertySource.class::cast)
+                    // DynamicValuesPropertySource lưu Supplier làm giá trị; property file thì không.
+                    .anyMatch(source -> source.getSource().get("spring.rabbitmq.port")
+                            instanceof Supplier<?>);
+            if (!messagingTest) {
+                return;
+            }
+            environment.getPropertySources().addFirst(new MapPropertySource(
+                    "paymentMessagingTestOverrides",
+                    Map.of(LISTENER_AUTO_STARTUP, "true", OUTBOX_PUBLISHER_ENABLED, "true")));
+        }
     }
 
     @Autowired

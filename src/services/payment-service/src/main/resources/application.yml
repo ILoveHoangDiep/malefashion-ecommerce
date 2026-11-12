@@ -44,8 +44,14 @@ spring:
 payment:
   outbox:
     publish-interval-ms: ${PAYMENT_OUTBOX_PUBLISH_INTERVAL_MS:500}
+    publisher:
+      # Mặc định bật scheduler; test chỉ có PostgreSQL tắt để không gọi broker thật.
+      enabled: ${PAYMENT_OUTBOX_PUBLISHER_ENABLED:true}
   messaging:
     consumer-name: payment-service
+    listener:
+      # Mặc định bật listener; test chỉ có PostgreSQL tắt để không consume command thật.
+      auto-startup: ${PAYMENT_MESSAGING_LISTENER_AUTO_STARTUP:true}
     retry:
       max-attempts: ${PAYMENT_MESSAGE_MAX_ATTEMPTS:3}
       initial-interval-ms: 500
