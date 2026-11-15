@@ -117,6 +117,31 @@ services:
     networks:
       - malefashion-network
 
+  notification-service:
+      build:
+        context: ../../src/services/notification-service
+        dockerfile: Dockerfile
+      image: malefashion-notification-service:latest
+      container_name: malefashion-notification-service
+      environment:
+        ASPNETCORE_ENVIRONMENT: Development
+        ASPNETCORE_URLS: http://+:8080
+        ConnectionStrings__DefaultConnection: Host=malefashion-postgres;Port=5432;Database=notification_db;Username=postgres;Password=postgrespassword
+        RabbitMQ__Host: malefashion-rabbitmq
+        RabbitMQ__Port: 5672
+        RabbitMQ__Username: guest
+        RabbitMQ__Password: guest
+        JwtSettings__Secret: MalefashionSecretKeyMustBeVeryLongAndSecure2026!
+        JwtSettings__Issuer: malefashion-identity
+        JwtSettings__Audience: malefashion-clients
+      depends_on:
+        postgres:
+          condition: service_healthy
+        rabbitmq:
+          condition: service_started
+      networks:
+        - malefashion-network
+
   # ==========================================
   # 3. API GATEWAY (SINGLE ENTRY POINT)
   # ==========================================
@@ -137,3 +162,4 @@ services:
       - identity-service
     networks:
       - malefashion-network
+

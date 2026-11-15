@@ -16,7 +16,7 @@ public class Notification
     public string OrderId {get; set;} = string.Empty;
 
     [Required]
-    [MaxLength(10)]
+    [MaxLength(50)]
     public string Type {get; set;} = string.Empty; // confirm - created - cancelled
 
     public bool IsRead {get; set;} = false;
