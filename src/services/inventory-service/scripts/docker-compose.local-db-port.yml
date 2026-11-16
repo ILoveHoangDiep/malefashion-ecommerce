@@ -1,0 +1,15 @@
+# Local-only compose override.
+#
+# Some Windows machines already run a native PostgreSQL service on host port 5432. Docker Desktop
+# still starts the container, but host connections to localhost:5432 reach the native server and
+# fail authentication, so the inventory service must use a different published port.
+#
+# Usage (from the repository root):
+#   docker compose -f deploy/docker-compose/docker-compose.infra.yml \
+#                  -f src/services/inventory-service/scripts/docker-compose.local-db-port.yml \
+#                  up -d postgres rabbitmq
+# Then run the service with POSTGRES_PORT=15432.
+services:
+  postgres:
+    ports: !override
+      - "15432:5432"

@@ -1,0 +1,205 @@
+include:
+  - docker-compose.infra.yml
+
+services:
+  # ==========================================
+  # 1. MICROSERVICES (.NET & JAVA SPRING BOOT)
+  # ==========================================
+  identity-service:
+    build:
+      context: ../../src/services/identity-service
+      dockerfile: Dockerfile
+    image: malefashion-identity-service:latest
+    container_name: malefashion-identity-service
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=identity_db;Username=postgres;Password=postgrespassword"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  catalog-service:
+    build:
+      context: ../../src/services/catalog-service
+      dockerfile: Dockerfile
+    image: malefashion-catalog-service:latest
+    container_name: malefashion-catalog-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/catalog_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadminpassword
+      MINIO_BUCKET_NAME: catalog-images
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+
+  cart-coupon-service:
+    build:
+      context: ../../src/services/cart-coupon-service
+      dockerfile: Dockerfile
+    image: malefashion-cart-coupon-service:latest
+    container_name: malefashion-cart-coupon-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cart_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  inventory-service:
+    build:
+      context: ../../src/services/inventory-service
+      dockerfile: Dockerfile
+    image: malefashion-inventory-service:latest
+    container_name: malefashion-inventory-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      INVENTORY_SERVICE_PORT: 8085
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/inventory_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  payment-service:
+    build:
+      context: ../../src/services/payment-service
+      dockerfile: Dockerfile
+    image: malefashion-payment-service:latest
+    container_name: malefashion-payment-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      PAYMENT_SERVICE_PORT: 8086
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  order-service:
+    build:
+      context: ../../src/services/order-service
+      dockerfile: Dockerfile
+    image: malefashion-order-service:latest
+    container_name: malefashion-order-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  notification-service:
+    build:
+      context: ../../src/services/notification-service
+      dockerfile: Dockerfile
+    image: malefashion-notification-service:latest
+    container_name: malefashion-notification-service
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=notification_db;Username=postgres;Password=postgrespassword"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__Username: guest
+      RabbitMQ__Password: guest
+      JwtSettings__Secret: MalefashionSecretKeyMustBeVeryLongAndSecure2026!
+      JwtSettings__Issuer: malefashion-identity
+      JwtSettings__Audience: malefashion-clients
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  # ==========================================
+  # 2. API GATEWAY & STOREFRONT
+  # ==========================================
+  api-gateway:
+    build:
+      context: ../../src/gateways/api-gateway
+      dockerfile: Dockerfile
+    image: malefashion-api-gateway:latest
+    container_name: malefashion-api-gateway
+    restart: unless-stopped
+    ports:
+      - "7000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+    depends_on:
+      - identity-service
+      - notification-service
+
+  storefront:
+    build:
+      context: ../../src/web/storefront
+      dockerfile: Dockerfile
+    image: malefashion-storefront:latest
+    container_name: malefashion-storefront
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:7000
+      NEXT_PUBLIC_GATEWAY_URL: http://localhost:7000
+    depends_on:
+      - api-gateway

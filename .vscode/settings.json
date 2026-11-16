@@ -1,0 +1,13 @@
+{
+  "dotnet.dotnetAcquisitionExtension.existingDotnetPath": [
+    {
+      "extensionId": "ms-dotnettools.csharp",
+      "path": "/home/rpthoangck/.dotnet/dotnet"
+    },
+    {
+      "extensionId": "ms-dotnettools.csdevkit",
+      "path": "/home/rpthoangck/.dotnet/dotnet"
+    }
+  ],
+  "dotnet.projects.enableFileBasedPrograms": false
+}
