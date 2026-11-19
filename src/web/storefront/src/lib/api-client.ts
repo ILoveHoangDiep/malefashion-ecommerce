@@ -311,3 +311,92 @@ export async function applyCartCoupon(
   }
   return await res.json();
 }
+
+// ── Checkout types ────────────────────────────────────────────────────────────
+
+export interface ShippingAddress {
+  recipientName: string;
+  phone: string;
+  addressLine: string;
+  ward: string;
+  district: string;
+  city: string;
+}
+
+export type PaymentMethod = "COD" | "MOCK_CARD";
+export type MockPaymentScenario = "APPROVED" | "DECLINED" | "TIMEOUT";
+
+export interface CheckoutRequest {
+  cartId: string;
+  couponCode?: string | null;
+  shippingAddress: ShippingAddress;
+  paymentMethod: PaymentMethod;
+  mockPaymentScenario?: MockPaymentScenario;
+}
+
+export interface OrderItemResponse {
+  variantId: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unitPrice: Money;
+  lineTotal: Money;
+}
+
+export interface OrderResponse {
+  orderId: string;
+  orderNumber: string;
+  status: string;
+  userId: string;
+  items: OrderItemResponse[];
+  subtotal: Money;
+  discountAmount: Money;
+  shippingFee: Money;
+  totalAmount: Money;
+  paymentMethod: string;
+  shippingAddress: ShippingAddress;
+  createdAt: string;
+}
+
+export interface CartValidateResponse {
+  valid: boolean;
+  reason?: string;
+  cart?: CartResponse;
+}
+
+// ── Checkout API calls ────────────────────────────────────────────────────────
+
+export async function validateCart(
+  userId: string = DEMO_USER_ID
+): Promise<CartValidateResponse> {
+  const res = await fetch(`${CART_DIRECT}/api/v1/cart/validate`, {
+    method: "POST",
+    headers: { "X-User-Id": userId },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Không thể xác thực giỏ hàng");
+  }
+  return await res.json();
+}
+
+export async function checkoutOrder(
+  userId: string = DEMO_USER_ID,
+  payload: CheckoutRequest
+): Promise<OrderResponse> {
+  const res = await fetch(`${GATEWAY_BASE}/api/v1/orders/checkout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-User-Id": userId,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      err.detail || err.message || `Đặt hàng thất bại (${res.status})`
+    );
+  }
+  return await res.json();
+}

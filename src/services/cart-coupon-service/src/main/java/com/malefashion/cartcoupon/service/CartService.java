@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -137,6 +138,33 @@ public class CartService {
     public void clearCart(UUID userId) {
         String key = buildCartKey(userId);
         redisTemplate.delete(key);
+        log.info("Cart cleared for userId={}", userId);
+    }
+
+    @Transactional(readOnly = true)
+    public CartValidateResponse validateCart(UUID userId) {
+        Cart cart = getCart(userId);
+
+        if (cart == null) {
+            return CartValidateResponse.failed("Giỏ hàng không tồn tại.");
+        }
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+            return CartValidateResponse.failed("Giỏ hàng đang trống.");
+        }
+
+        // Nếu có coupon, kiểm tra còn hợp lệ không
+        if (cart.getAppliedCouponCode() != null && !cart.getAppliedCouponCode().isBlank()) {
+            BigDecimal subtotal = calculateSubtotal(cart);
+            try {
+                couponService.validateAndCalculateDiscount(cart.getAppliedCouponCode(), subtotal, userId);
+            } catch (Exception ex) {
+                return CartValidateResponse.failed(
+                        "Mã giảm giá '" + cart.getAppliedCouponCode() + "' không còn hợp lệ: " + ex.getMessage());
+            }
+        }
+
+        CartResponse cartResponse = mapToCartResponse(cart);
+        return CartValidateResponse.ok(cartResponse);
     }
 
     public CartResponse applyCoupon(UUID userId, String couponCode) {

@@ -257,12 +257,12 @@ export default function CartPage() {
             </form>
 
             {/* Checkout CTA */}
-            <button
-              onClick={() => alert("Chức năng Checkout sẽ chuyển tiếp qua Saga Order-Service (Person A)!")}
+            <Link
+              href="/checkout"
               className="w-full py-3.5 bg-rose-600 text-white font-bold text-xs uppercase tracking-wider rounded hover:bg-rose-700 shadow-md transition-colors flex items-center justify-center gap-2"
             >
               <ShieldCheck className="w-4 h-4" /> Tiến hành đặt hàng
-            </button>
+            </Link>
           </div>
         </div>
       )}

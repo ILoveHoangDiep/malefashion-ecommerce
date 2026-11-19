@@ -75,6 +75,13 @@ public class StorefrontCartController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/validate")
+    public ResponseEntity<CartValidateResponse> validateCart(
+            @RequestHeader("X-User-Id") UUID userId) {
+        CartValidateResponse response = cartService.validateCart(userId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/coupons")
     public ResponseEntity<List<CouponDto>> getAvailableCoupons() {
         List<CouponDto> coupons = couponService.getAvailableCoupons();
