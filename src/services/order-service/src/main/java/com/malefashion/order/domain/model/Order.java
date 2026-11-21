@@ -77,6 +77,18 @@ public class Order {
     @Column(name = "refund_deadline_at")
     private Instant refundDeadlineAt;
 
+    @Column(name = "commit_command_event_id")
+    private UUID commitCommandEventId;
+
+    @Column(name = "commit_retry_count", nullable = false)
+    private int commitRetryCount;
+
+    @Column(name = "commit_deadline_at")
+    private Instant commitDeadlineAt;
+
+    @Column(name = "commit_unconfirmed", nullable = false)
+    private boolean commitUnconfirmed;
+
     @Column(name = "currency", nullable = false, length = 3)
     private String currency;
 
@@ -283,6 +295,55 @@ public class Order {
         touch(now);
     }
 
+    /**
+     * Bắt đầu chờ inventory.commit-stock. Event id được sinh đúng một lần và dùng lại cho mọi lần
+     * gửi lại để inventory dedupe.
+     */
+    public void startCommit(Duration timeout, Instant now, UUID commandEventId) {
+        this.commitCommandEventId = Objects.requireNonNull(commandEventId,
+                "commandEventId must not be null");
+        this.commitRetryCount = 0;
+        this.commitDeadlineAt = Instants.millis(now.plus(timeout));
+        this.commitUnconfirmed = false;
+        touch(now);
+    }
+
+    public void increaseCommitRetryCount(Instant now) {
+        this.commitRetryCount++;
+        touch(now);
+    }
+
+    public void setCommitDeadline(Instant deadline, Instant now) {
+        this.commitDeadlineAt = Instants.millis(deadline);
+        touch(now);
+    }
+
+    public void clearCommitDeadline(Instant now) {
+        this.commitDeadlineAt = null;
+        touch(now);
+    }
+
+    /**
+     * Hết lượt gửi lại commit: đơn thất bại nhưng KHÔNG tự hoàn tiền vì order-service không biết
+     * inventory đã chốt kho hay chưa. cancel_reason để null; event đến muộn có thể tự hồi phục.
+     */
+    public void markCommitUnconfirmed(Instant now) {
+        this.status = OrderStatus.FAILED;
+        this.cancelReason = null;
+        this.pendingCancelReason = null;
+        this.sagaDeadlineAt = null;
+        this.compensationDeadlineAt = null;
+        this.commitDeadlineAt = null;
+        this.sagaStep = SagaStep.DONE;
+        this.commitUnconfirmed = true;
+        touch(now);
+    }
+
+    public void clearCommitUnconfirmed(Instant now) {
+        this.commitUnconfirmed = false;
+        touch(now);
+    }
+
     public void confirm(Instant now) {
         this.status = OrderStatus.CONFIRMED;
         this.cancelReason = null;
@@ -290,6 +351,8 @@ public class Order {
         this.sagaDeadlineAt = null;
         this.compensationDeadlineAt = null;
         this.refundDeadlineAt = null;
+        this.commitDeadlineAt = null;
+        this.commitUnconfirmed = false;
         touch(now);
     }
 
@@ -405,6 +468,22 @@ public class Order {
 
     public Instant getRefundDeadlineAt() {
         return refundDeadlineAt;
+    }
+
+    public UUID getCommitCommandEventId() {
+        return commitCommandEventId;
+    }
+
+    public int getCommitRetryCount() {
+        return commitRetryCount;
+    }
+
+    public Instant getCommitDeadlineAt() {
+        return commitDeadlineAt;
+    }
+
+    public boolean isCommitUnconfirmed() {
+        return commitUnconfirmed;
     }
 
     public String getCurrency() {

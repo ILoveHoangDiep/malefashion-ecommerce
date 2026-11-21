@@ -28,7 +28,7 @@ class OrderServiceContextIT extends IntegrationTestBase {
                 "SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank",
                 Integer.class);
 
-        assertThat(versions).containsExactly(1);
+        assertThat(versions).containsExactly(1, 2);
     }
 
     @Test

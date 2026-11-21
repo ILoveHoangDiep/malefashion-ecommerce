@@ -3,9 +3,11 @@ package com.malefashion.order.application;
 import com.malefashion.order.config.OrderProperties;
 import com.malefashion.order.domain.support.Instants;
 import com.malefashion.order.infrastructure.messaging.InboundEvent;
+import com.malefashion.order.infrastructure.messaging.TraceIds;
 import com.malefashion.order.infrastructure.persistence.ProcessedMessageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -40,15 +42,26 @@ public class InboxProcessor {
     }
 
     public void process(InboundEvent event) {
-        transactionTemplate.executeWithoutResult(status -> {
-            int inserted = processedMessageRepository.insertIfAbsent(
-                    consumerName, event.eventId(), Instants.millis(clock.instant()));
-            if (inserted == 0) {
-                log.info("Skipping duplicate event orderId={} eventId={} eventType={}",
-                        event.orderId(), event.eventId(), event.eventType());
-                return;
-            }
-            sagaEventHandler.handle(event);
-        });
+        // Đặt MDC từ envelope trước khi mở transaction để mọi command/event do saga sinh ra dùng
+        // chung traceId. Chỉ có id, không có email hay payload.
+        MDC.put(TraceIds.MDC_TRACE_ID, event.traceId());
+        MDC.put(TraceIds.MDC_ORDER_ID, event.orderId().toString());
+        MDC.put(TraceIds.MDC_EVENT_ID, event.eventId().toString());
+        try {
+            transactionTemplate.executeWithoutResult(status -> {
+                int inserted = processedMessageRepository.insertIfAbsent(
+                        consumerName, event.eventId(), Instants.millis(clock.instant()));
+                if (inserted == 0) {
+                    log.info("Skipping duplicate event orderId={} eventId={} eventType={}",
+                            event.orderId(), event.eventId(), event.eventType());
+                    return;
+                }
+                sagaEventHandler.handle(event);
+            });
+        } finally {
+            MDC.remove(TraceIds.MDC_TRACE_ID);
+            MDC.remove(TraceIds.MDC_ORDER_ID);
+            MDC.remove(TraceIds.MDC_EVENT_ID);
+        }
     }
 }

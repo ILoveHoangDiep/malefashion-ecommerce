@@ -107,6 +107,41 @@ class OrderPersistenceIT extends IntegrationTestBase {
     }
 
     @Test
+    void savesAndReloadsCommitColumnsAndUnconfirmedState() {
+        Order order = OrderFixtures.newOrder(NOW);
+        java.util.UUID commitEventId = java.util.UUID.randomUUID();
+        order.applyReservation(OrderFixtures.RESERVATION_ID,
+                NOW.plus(Duration.ofMinutes(15)), NOW);
+        order.applyPayment(OrderFixtures.PAYMENT_ID, OrderFixtures.TOTAL,
+                OrderFixtures.PROVIDER_TRANSACTION_ID, NOW);
+        order.startCommit(Duration.ofMinutes(1), NOW, commitEventId);
+        order.increaseCommitRetryCount(NOW);
+        order.setCommitDeadline(NOW.plus(Duration.ofSeconds(30)), NOW);
+        order.moveToStep(SagaStep.AWAITING_COMMIT, NOW);
+
+        orderRepository.saveAndFlush(order);
+        Order reloaded = orderRepository.findWithItemsById(OrderFixtures.ORDER_ID).orElseThrow();
+
+        assertThat(reloaded.getCommitCommandEventId()).isEqualTo(commitEventId);
+        assertThat(reloaded.getCommitRetryCount()).isEqualTo(1);
+        assertThat(reloaded.getCommitDeadlineAt())
+                .isEqualTo(NOW.plus(Duration.ofSeconds(30)));
+        assertThat(reloaded.isCommitUnconfirmed()).isFalse();
+        assertThat(reloaded.getSagaStep()).isEqualTo(SagaStep.AWAITING_COMMIT);
+
+        reloaded.markCommitUnconfirmed(NOW.plusSeconds(60));
+        orderRepository.saveAndFlush(reloaded);
+        Order unconfirmed = orderRepository.findWithItemsById(OrderFixtures.ORDER_ID)
+                .orElseThrow();
+
+        assertThat(unconfirmed.getStatus()).isEqualTo(OrderStatus.FAILED);
+        assertThat(unconfirmed.getSagaStep()).isEqualTo(SagaStep.DONE);
+        assertThat(unconfirmed.isCommitUnconfirmed()).isTrue();
+        assertThat(unconfirmed.getCancelReason()).isNull();
+        assertThat(unconfirmed.getCommitDeadlineAt()).isNull();
+    }
+
+    @Test
     void truncatesTimestampsToMilliseconds() {
         Instant withNanos = Instant.parse("2026-10-22T03:15:30.123456789Z");
         orderRepository.saveAndFlush(OrderFixtures.newOrder(withNanos));

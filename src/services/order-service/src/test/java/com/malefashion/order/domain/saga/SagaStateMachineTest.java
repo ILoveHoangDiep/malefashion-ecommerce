@@ -26,6 +26,7 @@ class SagaStateMachineTest {
     private static final Instant T0 = Instant.parse("2026-10-22T03:15:30.123Z");
     private static final Duration SAGA_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration COMPENSATION_TIMEOUT = Duration.ofMinutes(2);
+    private static final Duration COMMIT_TIMEOUT = Duration.ofMinutes(1);
 
     private MutableClock clock;
     private SagaStateMachine machine;
@@ -71,13 +72,17 @@ class SagaStateMachineTest {
                 OrderFixtures.TOTAL, OrderFixtures.PROVIDER_TRANSACTION_ID);
 
         assertThat(transition.outcome()).isEqualTo(SagaOutcome.APPLIED);
-        assertThat(transition.actions()).containsExactly(new SagaAction.SendCommitStock());
+        assertThat(transition.actions()).containsExactly(new SagaAction.SendCommitStock(false));
         assertThat(order.getSagaStep()).isEqualTo(SagaStep.AWAITING_COMMIT);
         assertThat(order.getPaymentId()).isEqualTo(OrderFixtures.PAYMENT_ID);
         assertThat(order.getPaidAmount()).isEqualByComparingTo("578000.00");
         assertThat(order.getProviderTransactionId())
                 .isEqualTo(OrderFixtures.PROVIDER_TRANSACTION_ID);
         assertThat(order.getSagaDeadlineAt()).isNull();
+        assertThat(order.getCommitCommandEventId()).isNotNull();
+        assertThat(order.getCommitRetryCount()).isZero();
+        assertThat(order.getCommitDeadlineAt()).isEqualTo(T0.plus(COMMIT_TIMEOUT));
+        assertThat(order.isCommitUnconfirmed()).isFalse();
     }
 
     @Test
@@ -430,7 +435,8 @@ class SagaStateMachineTest {
         AtomicInteger sequence = new AtomicInteger(1);
         return new SagaStateMachine(
                 new SagaTiming(COMPENSATION_TIMEOUT, refundMaxRetries,
-                        Duration.ofMinutes(1), 2.0),
+                        Duration.ofMinutes(1), 2.0,
+                        COMMIT_TIMEOUT, 2, Duration.ofSeconds(30), 2.0),
                 clock,
                 () -> UUID.nameUUIDFromBytes(
                         ("event-" + sequence.getAndIncrement()).getBytes(StandardCharsets.UTF_8)));

@@ -92,8 +92,10 @@ public final class SagaStateMachine {
         if (isPendingAwaiting(order, SagaStep.AWAITING_PAYMENT)) {
             order.applyPayment(paymentId, paidAmount, providerTransactionId, now);
             order.clearSagaDeadline(now);
+            // Chỉ sinh commit event id MỘT lần; mọi lần gửi lại dùng đúng id này.
+            order.startCommit(timing.commitTimeout(), now, eventIds.get());
             order.moveToStep(SagaStep.AWAITING_COMMIT, now);
-            return SagaTransition.applied(new SagaAction.SendCommitStock());
+            return SagaTransition.applied(new SagaAction.SendCommitStock(false));
         }
         if (isLatePaymentAfterTimeout(order)) {
             if (order.getRefundState() != RefundState.NONE) {
@@ -154,14 +156,26 @@ public final class SagaStateMachine {
     }
 
     /**
-     * Dòng 7.
+     * Dòng 7 và dòng 17c.
      */
     public SagaTransition onStockCommitted(Order order) {
         Instant now = now();
         if (isPendingAwaiting(order, SagaStep.AWAITING_COMMIT)) {
+            // Dòng 17e: dừng retry commit khi inventory đã xác nhận.
+            order.clearCommitDeadline(now);
             order.confirm(now);
             order.moveToStep(SagaStep.DONE, now);
             return SagaTransition.applied(new SagaAction.EmitOrderConfirmed());
+        }
+        if (order.isCommitUnconfirmed()
+                && order.getStatus() == OrderStatus.FAILED
+                && order.getSagaStep() == SagaStep.DONE) {
+            // Dòng 17c: inventory đã chốt kho muộn sau khi order bỏ cuộc chờ commit → tự hồi phục.
+            order.clearCommitUnconfirmed(now);
+            order.confirm(now);
+            return SagaTransition.applied(
+                    new SagaAction.EmitOrderConfirmed(),
+                    new SagaAction.LogWarn("COMMIT_CONFIRMED_AFTER_DEADLINE"));
         }
         if (order.getStatus() == OrderStatus.CONFIRMED && order.getSagaStep() == SagaStep.DONE) {
             return SagaTransition.ignoredDuplicate();
@@ -170,17 +184,35 @@ public final class SagaStateMachine {
     }
 
     /**
-     * Dòng 8: commit thất bại sau khi đã thu tiền, bắt đầu hoàn tiền.
+     * Dòng 8 và dòng 17d: commit thất bại sau khi đã thu tiền, bắt đầu hoàn tiền.
      */
     public SagaTransition onStockCommitFailed(Order order) {
         Instant now = now();
         if (isPendingAwaiting(order, SagaStep.AWAITING_COMMIT)) {
+            // Dòng 17e: dừng retry commit trước khi chuyển sang hoàn tiền.
+            order.clearCommitDeadline(now);
             order.setPendingCancelReason(CancelReason.STOCK_COMMIT_FAILED, now);
             order.moveToStep(SagaStep.AWAITING_REFUND, now);
             order.startRefund(timing.compensationTimeout(), now, eventIds.get());
             return SagaTransition.applied(new SagaAction.SendRefund(false));
         }
-        if (order.getSagaStep() == SagaStep.AWAITING_REFUND) {
+        if (order.isCommitUnconfirmed()
+                && order.getStatus() == OrderStatus.FAILED
+                && order.getSagaStep() == SagaStep.DONE
+                && order.getRefundState() == RefundState.NONE) {
+            // Dòng 17d: order đã bỏ cuộc chờ commit, inventory báo commit thất bại muộn. Status giữ
+            // FAILED và KHÔNG phát order.cancelled; chỉ hoàn tiền.
+            order.clearCommitUnconfirmed(now);
+            order.fail(CancelReason.STOCK_COMMIT_FAILED, now);
+            order.startRefund(timing.compensationTimeout(), now, eventIds.get());
+            return SagaTransition.applied(
+                    new SagaAction.SendRefund(false),
+                    new SagaAction.LogWarn("COMMIT_FAILED_AFTER_DEADLINE"));
+        }
+        if (order.getSagaStep() == SagaStep.AWAITING_REFUND
+                || (order.getStatus() == OrderStatus.FAILED
+                && order.getSagaStep() == SagaStep.DONE
+                && order.getRefundState() != RefundState.NONE)) {
             return SagaTransition.ignoredDuplicate();
         }
         return SagaTransition.notApplicable();
@@ -236,6 +268,11 @@ public final class SagaStateMachine {
             order.moveToStep(SagaStep.DONE, now);
             return SagaTransition.applied(new SagaAction.EmitOrderCancelled());
         }
+        if (order.getStatus() == OrderStatus.FAILED && order.getSagaStep() == SagaStep.DONE) {
+            // Dòng 17d: refund của order đã commit_unconfirmed; chỉ đóng sổ, không phát event.
+            order.applyRefund(refundId, now);
+            return SagaTransition.applied();
+        }
         if (isLatePaymentAfterTimeout(order)) {
             // Đơn đã hủy (hoặc đang chờ release) vì timeout; refund chỉ để đóng sổ, không phát event nữa.
             order.applyRefund(refundId, now);
@@ -287,7 +324,8 @@ public final class SagaStateMachine {
             // at-least-once. Vì vậy retry KHÔNG phải cách để lấy lại một event đã mất. Nếu hết lượt
             // retry vẫn không thấy payment.refunded → refund_state=REFUND_FAILED, cần xử lý thủ công
             // (kiểm tra bảng payments/refunds và DLQ).
-            order.setRefundDeadline(now.plus(retryDelay(order.getRefundRetryCount())), now);
+            order.setRefundDeadline(now.plus(retryDelay(order.getRefundRetryCount(),
+                    timing.refundRetryBackoff(), timing.refundRetryBackoffMultiplier())), now);
             return SagaTransition.applied(new SagaAction.SendRefund(true));
         }
         order.markRefundFailed(now);
@@ -301,12 +339,39 @@ public final class SagaStateMachine {
     }
 
     /**
+     * Dòng 17a và 17b: quá hạn chờ inventory.commit-stock.
+     */
+    public SagaTransition onCommitTimeout(Order order) {
+        Instant now = now();
+        if (!isPendingAwaiting(order, SagaStep.AWAITING_COMMIT)) {
+            return SagaTransition.notApplicable();
+        }
+        if (!isDue(order.getCommitDeadlineAt(), now)) {
+            return SagaTransition.notApplicable();
+        }
+        if (order.getCommitRetryCount() < timing.commitMaxRetries()) {
+            order.increaseCommitRetryCount(now);
+            // Gửi lại dùng ĐÚNG commit_command_event_id cũ: chỉ đảm bảo lệnh không bị mất nếu lần
+            // trước chưa tới inventory-service. inventory dedupe theo eventId, nên nếu lệnh đã được
+            // xử lý thì bản gửi lại bị bỏ qua và KHÔNG có event mới; kết quả (stock-committed /
+            // stock-commit-failed) đã nằm trong outbox của inventory từ lần xử lý đầu và sẽ tới
+            // order-service theo cơ chế at-least-once. Retry không phải cách lấy lại event đã mất.
+            order.setCommitDeadline(now.plus(retryDelay(order.getCommitRetryCount(),
+                    timing.commitRetryBackoff(), timing.commitRetryBackoffMultiplier())), now);
+            return SagaTransition.applied(new SagaAction.SendCommitStock(true));
+        }
+        // Hết lượt gửi lại: không tự refund (không biết kho đã chốt chưa) và không phát
+        // order.cancelled. cancel_reason để null; event muộn có thể tự hồi phục (17c/17d).
+        order.markCommitUnconfirmed(now);
+        return SagaTransition.applied(new SagaAction.LogError("COMMIT_RETRY_EXHAUSTED"));
+    }
+
+    /**
      * Hạn chờ của lần gửi lại thứ k = backoff × multiplier^(k-1).
      */
-    private Duration retryDelay(int retryNumber) {
-        BigDecimal factor = BigDecimal.valueOf(timing.refundRetryBackoffMultiplier())
-                .pow(retryNumber - 1);
-        BigDecimal millis = BigDecimal.valueOf(timing.refundRetryBackoff().toMillis())
+    private Duration retryDelay(int retryNumber, Duration backoff, double multiplier) {
+        BigDecimal factor = BigDecimal.valueOf(multiplier).pow(retryNumber - 1);
+        BigDecimal millis = BigDecimal.valueOf(backoff.toMillis())
                 .multiply(factor)
                 .setScale(0, RoundingMode.HALF_UP);
         return Duration.ofMillis(millis.longValueExact());

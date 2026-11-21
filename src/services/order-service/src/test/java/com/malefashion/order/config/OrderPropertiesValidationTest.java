@@ -37,6 +37,11 @@ class OrderPropertiesValidationTest {
                     OrderProperties properties = context.getBean(OrderProperties.class);
                     assertThat(properties.saga().timeout()).isEqualTo(Duration.ofMinutes(10));
                     assertThat(properties.saga().refundMaxRetries()).isEqualTo(2);
+                    assertThat(properties.saga().commitTimeout()).isEqualTo(Duration.ofMinutes(1));
+                    assertThat(properties.saga().commitMaxRetries()).isEqualTo(2);
+                    assertThat(properties.saga().commitRetryBackoff())
+                            .isEqualTo(Duration.ofSeconds(30));
+                    assertThat(properties.saga().commitRetryBackoffMultiplier()).isEqualTo(2.0);
                     assertThat(properties.shippingFee()).isEqualByComparingTo("30000.00");
                     assertThat(properties.messaging().retry().maxAttempts()).isEqualTo(3);
                     assertThat(properties.outbox().batchSize()).isEqualTo(100);
@@ -66,6 +71,10 @@ class OrderPropertiesValidationTest {
                 Arguments.of("order.saga.refund-retry-backoff-multiplier", "0.5"),
                 Arguments.of("order.saga.timeout", "PT0S"),
                 Arguments.of("order.saga.compensation-timeout", "PT0S"),
+                Arguments.of("order.saga.commit-timeout", "PT0S"),
+                Arguments.of("order.saga.commit-max-retries", "-1"),
+                Arguments.of("order.saga.commit-retry-backoff", "PT0S"),
+                Arguments.of("order.saga.commit-retry-backoff-multiplier", "0.5"),
                 Arguments.of("order.internal-api-key", " "),
                 Arguments.of("order.shipping-fee", "-0.01"),
                 Arguments.of("order.timeout-scan-interval-ms", "0"),
@@ -85,6 +94,10 @@ class OrderPropertiesValidationTest {
         properties.put("order.saga.refund-max-retries", "2");
         properties.put("order.saga.refund-retry-backoff", "PT1M");
         properties.put("order.saga.refund-retry-backoff-multiplier", "2.0");
+        properties.put("order.saga.commit-timeout", "PT1M");
+        properties.put("order.saga.commit-max-retries", "2");
+        properties.put("order.saga.commit-retry-backoff", "PT30S");
+        properties.put("order.saga.commit-retry-backoff-multiplier", "2.0");
         properties.put("order.shipping-fee", "30000.00");
         properties.put("order.timeout-scan-interval-ms", "5000");
         properties.put("order.internal-api-key", "test-internal-api-key");

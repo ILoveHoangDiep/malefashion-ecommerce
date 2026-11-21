@@ -36,9 +36,17 @@ public final class OrderFixtures {
     }
 
     public static Order newOrder(Instant now, Instant sagaDeadlineAt) {
+        return newOrder(ORDER_ID, ORDER_NUMBER, now, sagaDeadlineAt);
+    }
+
+    /**
+     * Fixture nhiều order trong cùng một test: id và orderNumber phải khác nhau.
+     */
+    public static Order newOrder(UUID orderId, String orderNumber, Instant now,
+                                 Instant sagaDeadlineAt) {
         Order order = Order.create(
-                ORDER_ID,
-                ORDER_NUMBER,
+                orderId,
+                orderNumber,
                 USER_ID,
                 USER_EMAIL,
                 new Order.ShippingSnapshot(

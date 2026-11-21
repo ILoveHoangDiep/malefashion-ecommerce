@@ -45,6 +45,11 @@ order:
   saga:
     timeout: ${ORDER_SAGA_TIMEOUT:PT10M}
     compensation-timeout: ${ORDER_COMPENSATION_TIMEOUT:PT2M}
+    # Hạn chờ lần gửi commit đầu tiên; retry = gửi lại cùng eventId sau backoff × multiplier^(k-1).
+    commit-timeout: ${ORDER_COMMIT_TIMEOUT:PT1M}
+    commit-max-retries: ${ORDER_COMMIT_MAX_RETRIES:2}
+    commit-retry-backoff: ${ORDER_COMMIT_RETRY_BACKOFF:PT30S}
+    commit-retry-backoff-multiplier: ${ORDER_COMMIT_RETRY_BACKOFF_MULTIPLIER:2.0}
     refund-max-retries: ${ORDER_REFUND_MAX_RETRIES:2}
     refund-retry-backoff: ${ORDER_REFUND_RETRY_BACKOFF:PT1M}
     refund-retry-backoff-multiplier: ${ORDER_REFUND_RETRY_BACKOFF_MULTIPLIER:2.0}

@@ -9,7 +9,11 @@ public sealed interface SagaAction {
     record SendProcessPayment() implements SagaAction {
     }
 
-    record SendCommitStock() implements SagaAction {
+    /**
+     * @param retry false cho lần gửi đầu, true cho các lần gửi lại sau commit deadline. Cả hai đều
+     *              dùng đúng {@code commitCommandEventId} đã lưu trên order.
+     */
+    record SendCommitStock(boolean retry) implements SagaAction {
     }
 
     record SendReleaseStock(StockReleaseReason reason) implements SagaAction {

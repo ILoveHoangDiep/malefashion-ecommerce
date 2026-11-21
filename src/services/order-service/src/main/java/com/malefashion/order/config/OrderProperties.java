@@ -35,7 +35,11 @@ public record OrderProperties(
             @NotNull @DurationMin(seconds = 1) Duration compensationTimeout,
             @Min(0) int refundMaxRetries,
             @NotNull @DurationMin(seconds = 1) Duration refundRetryBackoff,
-            @DecimalMin(value = "1.0", inclusive = true) double refundRetryBackoffMultiplier
+            @DecimalMin(value = "1.0", inclusive = true) double refundRetryBackoffMultiplier,
+            @NotNull @DurationMin(seconds = 1) Duration commitTimeout,
+            @Min(0) int commitMaxRetries,
+            @NotNull @DurationMin(seconds = 1) Duration commitRetryBackoff,
+            @DecimalMin(value = "1.0", inclusive = true) double commitRetryBackoffMultiplier
     ) {
     }
 

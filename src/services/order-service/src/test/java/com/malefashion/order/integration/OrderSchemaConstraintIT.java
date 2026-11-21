@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -111,6 +112,28 @@ class OrderSchemaConstraintIT extends IntegrationTestBase {
                 insertOrder(UUID.randomUUID(), "MF-20261022-7K3Q9A", "PENDING",
                         "AWAITING_RESERVATION", "NONE", null, -1,
                         new BigDecimal("598000.00")));
+    }
+
+    @Test
+    void rejectsNegativeCommitRetryCount() {
+        UUID orderId = UUID.randomUUID();
+        insertOrder(orderId, "MF-20261022-7K3Q9A", "PENDING", "AWAITING_COMMIT",
+                "NONE", null, 0, new BigDecimal("598000.00"));
+
+        assertViolation("ck_orders_commit_retry_count", () ->
+                jdbcTemplate.update(
+                        "UPDATE orders SET commit_retry_count = -1 WHERE id = ?", orderId));
+    }
+
+    @Test
+    void createsPartialIndexForCommitDeadlineScan() {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM pg_indexes
+                WHERE schemaname = 'public' AND tablename = 'orders'
+                  AND indexname = 'idx_orders_commit_deadline'
+                """, Integer.class);
+
+        assertThat(count).isEqualTo(1);
     }
 
     @Test

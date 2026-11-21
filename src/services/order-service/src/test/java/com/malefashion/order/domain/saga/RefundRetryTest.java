@@ -49,6 +49,7 @@ class RefundRetryTest {
         SagaTransition initial = moveToAwaitingRefund(machine);
         assertThat(initial.actions()).containsExactly(new SagaAction.SendRefund(false));
 
+        UUID commitEventId = order.getCommitCommandEventId();
         UUID commandEventId = order.getRefundCommandEventId();
         assertThat(commandEventId).isNotNull();
         assertThat(order.getRefundDeadlineAt()).isEqualTo(T0.plus(COMPENSATION_TIMEOUT));
@@ -84,13 +85,14 @@ class RefundRetryTest {
         assertThat(order.getSagaStep()).isEqualTo(SagaStep.DONE);
         assertThat(order.getCancelReason()).isEqualTo(CancelReason.STOCK_COMMIT_FAILED);
         assertThat(order.getRefundDeadlineAt()).isNull();
-        assertThat(generatedEventIds).containsExactly(commandEventId);
+        assertThat(generatedEventIds).containsExactly(commitEventId, commandEventId);
     }
 
     @Test
     void maxRetriesZeroFailsOnFirstDeadlineWithoutSendingAgain() {
         SagaStateMachine machine = machine(0);
         moveToAwaitingRefund(machine);
+        UUID commitEventId = order.getCommitCommandEventId();
         UUID commandEventId = order.getRefundCommandEventId();
 
         clock.setInstant(T0.plus(COMPENSATION_TIMEOUT));
@@ -103,7 +105,7 @@ class RefundRetryTest {
         assertThat(order.getRefundState()).isEqualTo(RefundState.REFUND_FAILED);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
         assertThat(order.getSagaStep()).isEqualTo(SagaStep.DONE);
-        assertThat(generatedEventIds).containsExactly(commandEventId);
+        assertThat(generatedEventIds).containsExactly(commitEventId, commandEventId);
     }
 
     @Test
@@ -197,7 +199,8 @@ class RefundRetryTest {
     private SagaStateMachine machine(int maxRetries) {
         AtomicInteger sequence = new AtomicInteger(1);
         return new SagaStateMachine(
-                new SagaTiming(COMPENSATION_TIMEOUT, maxRetries, BACKOFF, 2.0),
+                new SagaTiming(COMPENSATION_TIMEOUT, maxRetries, BACKOFF, 2.0,
+                        Duration.ofMinutes(1), 2, Duration.ofSeconds(30), 2.0),
                 clock,
                 () -> {
                     UUID eventId = UUID.nameUUIDFromBytes(
