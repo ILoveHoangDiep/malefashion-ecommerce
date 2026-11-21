@@ -1,0 +1,6 @@
+logging:
+  level:
+    com.malefashion.order: DEBUG
+
+order:
+  mock-scenario-enabled: true
