@@ -20,7 +20,8 @@ import java.time.format.DateTimeParseException;
 
 /**
  * Contract timestamps are ISO-8601 UTC with exactly three fractional digits and a trailing {@code Z}.
- * Null fields are omitted and unknown fields are ignored on deserialization.
+ * Null fields are omitted and unknown fields are ignored on deserialization; riêng HTTP request body
+ * dùng mapper nghiêm hơn ở {@code WebConfig} để tôn trọng {@code additionalProperties:false}.
  */
 @Configuration
 public class JacksonConfig {
