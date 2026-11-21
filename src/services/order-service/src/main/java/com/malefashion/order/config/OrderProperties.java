@@ -41,6 +41,8 @@ public record OrderProperties(
 
     public record Outbox(
             @Min(1) long publishIntervalMs,
+            @Min(1) int batchSize,
+            @NotNull @DurationMin(millis = 1) Duration confirmTimeout,
             @NotNull @Valid Publisher publisher
     ) {
 
@@ -57,7 +59,9 @@ public record OrderProperties(
     ) {
 
         public record Listener(
-                boolean autoStartup
+                boolean autoStartup,
+                @Min(1) int concurrency,
+                @NotBlank String queue
         ) {
         }
 

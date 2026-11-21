@@ -39,6 +39,12 @@ class OrderPropertiesValidationTest {
                     assertThat(properties.saga().refundMaxRetries()).isEqualTo(2);
                     assertThat(properties.shippingFee()).isEqualByComparingTo("30000.00");
                     assertThat(properties.messaging().retry().maxAttempts()).isEqualTo(3);
+                    assertThat(properties.outbox().batchSize()).isEqualTo(100);
+                    assertThat(properties.outbox().confirmTimeout()).isEqualTo(Duration.ofSeconds(5));
+                    assertThat(properties.messaging().consumerName()).isEqualTo("order-service");
+                    assertThat(properties.messaging().listener().concurrency()).isEqualTo(1);
+                    assertThat(properties.messaging().listener().queue())
+                            .isEqualTo("order-service.saga.events");
                 });
     }
 
@@ -64,6 +70,11 @@ class OrderPropertiesValidationTest {
                 Arguments.of("order.shipping-fee", "-0.01"),
                 Arguments.of("order.timeout-scan-interval-ms", "0"),
                 Arguments.of("order.outbox.publish-interval-ms", "0"),
+                Arguments.of("order.outbox.batch-size", "0"),
+                Arguments.of("order.outbox.confirm-timeout", "PT0S"),
+                Arguments.of("order.messaging.consumer-name", " "),
+                Arguments.of("order.messaging.listener.concurrency", "0"),
+                Arguments.of("order.messaging.listener.queue", " "),
                 Arguments.of("order.messaging.retry.max-attempts", "0"));
     }
 
@@ -81,9 +92,13 @@ class OrderPropertiesValidationTest {
         properties.put("order.catalog-base-url", "http://catalog-service:8082");
         properties.put("order.mock-scenario-enabled", "false");
         properties.put("order.outbox.publish-interval-ms", "500");
+        properties.put("order.outbox.batch-size", "100");
+        properties.put("order.outbox.confirm-timeout", "PT5S");
         properties.put("order.outbox.publisher.enabled", "false");
         properties.put("order.messaging.consumer-name", "order-service");
         properties.put("order.messaging.listener.auto-startup", "false");
+        properties.put("order.messaging.listener.concurrency", "1");
+        properties.put("order.messaging.listener.queue", "order-service.saga.events");
         properties.put("order.messaging.retry.max-attempts", "3");
         properties.put("order.messaging.retry.initial-interval-ms", "500");
         properties.put("order.messaging.retry.multiplier", "2.0");
